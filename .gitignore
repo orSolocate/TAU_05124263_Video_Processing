@@ -1,4 +1,6 @@
 *.docx
 *.doc
-
+*.idea
 *.avi
+*.pyc
+*.zip
