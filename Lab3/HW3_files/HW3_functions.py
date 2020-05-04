@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import cv2
 
 def predictParticles(S_next_tag):
     #INPUT  = S_next_tag (previously sampled particles)
@@ -6,7 +9,7 @@ def predictParticles(S_next_tag):
     N=100
     m,n=S_next_tag.shape
     S_next=np.zeros((m,n))
-    noise_sigma=4
+    noise_sigma=2
     noise=np.random.normal(0,noise_sigma,(m,N))
     #width and height cannot change
     noise[2:4,:]=0
@@ -24,30 +27,40 @@ def compNormHist(I, S):
     #OUTPUT = normHist (NORMALIZED HISTOGRAM 16x16x16 SPREAD OUT AS A 4096x1 VECTOR.
     #NORMALIZED = SUM OF TOTAL ELEMENTS IN THE HISTOGRAM = 1)
     #assuming: I is an RGB image
-    Xc=int(S[0])
-    Yc=int(S[1])
-    width_2=int(S[2])
-    height_2=int(S[3])
+    m,n,channels=I.shape
+    Q_factor=16
+    Xc, Yc, width_2, height_2=extract_params(S)
     histogram=[]
-    I_subportion = np.zeros((2*width_2,2*height_2, 3))
-    for channel in range(0,I.shape[2]):
-        I_subportion[:,:,channel]=I[Xc-width_2:Xc+width_2,Yc-height_2:Yc+height_2,channel]
-        I_subportion[:, :, channel]=quantizise_4(I_subportion[:, :, channel],16)
+    #not enough - needs to take care of the case the window is outside image boundaries
+    I_subportion = np.zeros((2*width_2,2*height_2, 3),dtype=int)
+    for channel in range(0,channels):
+        #check my m and n values. this is the only part that was not tested
+        I_subportion[:,:,channel]=I[max(0,Xc-width_2):min(Xc+width_2,m),max(0,Yc-height_2):min(Yc+height_2,n),channel]
+        I_subportion[:, :, channel]=quantizise_4(I_subportion[:, :, channel],Q_factor-1)
         #bug: why hist has no pixels with 15. I_subportion[:, :, channel] has 15 element
-        hist,bins=(np.histogram(I_subportion[:, :, channel], bins=range(0,16), density=False))
-        #fix edges from right side
-        hist = np.pad(hist, (0, 16 - len(hist)), mode='constant')
+        hist,bins=(np.histogram(I_subportion[:, :, channel],range=(0,Q_factor-1), bins=Q_factor, density=False))
+        #fix edges from right side - necessary only for the case there are not 15 values. but i think not really possible...
+        hist = np.pad(hist, (0, Q_factor - len(hist)), mode='constant')
         histogram.append(hist)
     normHist=flatten_histogram(np.asarray(histogram))
     normHist=np.true_divide(normHist,float(np.sum(normHist)))
     return normHist
+
+
+def extract_params(S):
+    Xc = int(S[0])
+    Yc = int(S[1])
+    width_2 = int(S[2])
+    height_2 = int(S[3])
+    return Xc,Yc,width_2,height_2
+
 
 def quantizise_4(img, N):
     # uniform quantization of an image to values [0,N]
     min_val = np.min(img)
     max_val = np.max(img)
     quant_range = (max_val - min_val) / N
-    quant_uniform = np.floor((np.floor_divide(img - min_val, quant_range)))
+    quant_uniform = np.floor((np.floor_divide(img - min_val, quant_range))).astype(int)
     # explanation: we normalize the values of the image to the window quant_uniform, and round down
     return quant_uniform
 
@@ -85,10 +98,50 @@ def compute_CDF(W):
 def sampleParticles(S_prev, C):
     #INPUT  = S_prev (PREVIOUS STATE VECTOR MATRIX), C (CDF)
     #OUTPUT = S_next_tag (NEW X STATE VECTOR MATRIX)
-    return
+    S_next_tag=np.zeros(S_prev.shape)
+    N=100
+    for n in range(0,N):
+        r=np.random.uniform()
+        j = np.where(C == np.min(C[C >= r]))[0][0]
+        S_next_tag[:, n] = S_prev[:, j]
+    return S_next_tag
 
 
-def showParticles(I, S):
+def showParticles(I, S, W, frame_number, ID):
     #INPUT = I (current frame), S (current state vector)
     #W (current weight vector), i (number of current frame)
+    I_RGB=cv2.cvtColor(I,cv2.COLOR_BGR2RGB)
+    maximal_filter_index=np.argmax(W)
+    average_filter_index=find_nearest(W,np.average(W))
+    S_maximal_filter=S[:,maximal_filter_index]
+    S_average_filter=S[:,average_filter_index]
+    Xc, Yc, width_2, height_2=extract_params(S_maximal_filter)
+    maximal_rect = patches.Rectangle((Xc - width_2, Yc - height_2), width_2 * 2, height_2 * 2, linewidth=1,
+                                     edgecolor='r', facecolor='none')
+    Xc, Yc, width_2, height_2=extract_params(S_average_filter)
+    average_rect = patches.Rectangle((Xc - width_2,Yc - height_2), width_2 * 2, height_2 * 2, linewidth=1,
+                                      edgecolor='g', facecolor='none')
+    fig,ax=plt.subplots(1)
+    plt.title('{0}- Frame number = {1}'.format(ID,frame_number))
+    ax.imshow(I_RGB)
+    plt.ion()
+    ax.add_patch(maximal_rect)
+    ax.add_patch(average_rect)
+    plt.show(block = False)
     return
+
+'''
+def arg_median(a):
+    if len(a) % 2 == 1:
+        return np.where(a == np.median(a))[0][0]
+    else:
+        l,r = len(a) // 2 - 1, len(a) // 2
+        left = np.partition(a, l)[l]
+        right = np.partition(a, r)[r]
+        return [np.where(a == left)[0][0], np.where(a == right)[0][0]]
+    '''
+
+def find_nearest(a, a0):
+    "Element in nd array `a` closest to the scalar value `a0`"
+    idx = np.abs(a - a0).argmin()
+    return np.where(a==a.flat[idx])[0][0]

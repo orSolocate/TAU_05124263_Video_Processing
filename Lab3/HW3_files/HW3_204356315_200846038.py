@@ -35,8 +35,8 @@ N = 100
 # Initial Settings
 s_initial = [297,    # x center
              139,    # y center
-              10,    #16 half width
-              10,    #43 half height
+              16,    #DEFAULT 16 half width
+              43,    #DEFAULT 43 half height
                0,    # velocity x
                0]    # velocity y
 
@@ -65,7 +65,7 @@ images_processed = 1
 # MAIN TRACKING LOOP
 image_name_list = os.listdir(IMAGE_DIR_PATH)
 for image_name in image_name_list[1:]:
-
+    print(image_name)
     S_prev = S
 
     # LOAD NEW IMAGE FRAME
@@ -80,11 +80,13 @@ for image_name in image_name_list[1:]:
 
     # COMPUTE NORMALIZED WEIGHTS (W) AND PREDICTOR CDFS (C)
     # YOU NEED TO FILL THIS PART WITH CODE:
-    # I already did it up there
-    # ........
+    for i in range(0, N):
+        p = compNormHist(I, S[:, i])
+        W[i] = compBatDist(p, q)
+    W = np.true_divide(W, np.sum(W))
+    C = compute_CDF(W)
 
     # CREATE DETECTOR PLOTS
     images_processed += 1
     if 0 == images_processed%10:
-        showParticles(I, S, W, i, ID)
-
+        showParticles(I, S, W, images_processed, ID)
