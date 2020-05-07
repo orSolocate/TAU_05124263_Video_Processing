@@ -6,14 +6,10 @@ import os
 
 """
  HW 3, COURSE 0512-4263, TAU 2020
-
  PARTICLE FILTER TRACKING
-
  THE PURPOSE OF THIS ASSIGNMENT IS TO IMPLEMENT A PARTICLE FILTER TRACKER
  IN ORDER TO TRACK A RUNNING PERSON IN A SERIES OF IMAGES.
-
  IN ORDER TO DO THIS YOU WILL WRITE THE FOLLOWING FUNCTIONS:
-
  IMPORTANT - YOU WILL USE compNormHist TO UPDATE THE INDIVIDUAL WEIGHTS
  OF EACH PARTICLE. AFTER YOU'RE DONE WITH THIS YOU WILL NEED TO COMPUTE
  THE 100 NORMALIZED WEIGHTS WHICH WILL RESIDE IN VECTOR W (1x100)
@@ -87,6 +83,7 @@ for image_name in image_name_list[1:]:
     C = compute_CDF(W)
 
     # CREATE DETECTOR PLOTS
+    #showParticles(I, S, W, images_processed, ID)############delete me############
     images_processed += 1
     if 0 == images_processed%10:
         showParticles(I, S, W, images_processed, ID)

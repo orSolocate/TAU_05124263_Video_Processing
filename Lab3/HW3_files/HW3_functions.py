@@ -3,20 +3,20 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import cv2
 
-def predictParticles(S_next_tag):
+def predictParticles(S_next_tag): 
     #INPUT  = S_next_tag (previously sampled particles)
     #OUTPUT = S_next (predicted particles. weights and CDF not updated yet)
     N=100
     m,n=S_next_tag.shape
     S_next=np.zeros((m,n))
-    noise_sigma=2
+    noise_sigma=0.2 #was 2#############################################
     noise=np.random.normal(0,noise_sigma,(m,N))
     #width and height cannot change
     noise[2:4,:]=0
     for j in range(0,n): #column scan
         S_next[:,j]=S_next_tag[:,j]
-        S_next[0,j]+=S_next_tag[4,j]
-        S_next[1,j]+=S_next_tag[5,j]
+        S_next[0,j]+=S_next_tag[4,j]#Xvelocity
+        S_next[1,j]+=S_next_tag[5,j]#Yvelocity
         S_next[:,j]+=noise[:,j]
         #Xc,Yc are coordinates, must be integers, maybe Xv,Yv, too. easy to modify later if we wish..
         S_next[0:2,j]=S_next[0:2,j].round()
@@ -32,18 +32,19 @@ def compNormHist(I, S):
     Xc, Yc, width_2, height_2=extract_params(S)
     histogram=[]
     #not enough - needs to take care of the case the window is outside image boundaries
-    I_subportion = np.zeros((2*width_2,2*height_2, 3),dtype=int)
+    #I_subportion = np.zeros((2*width_2,2*height_2, channels),dtype=int) BAD XY ORIENTATION
+    I_subportion = np.zeros((2*height_2,2*width_2, channels),dtype=int)
     for channel in range(0,channels):
         #check my m and n values. this is the only part that was not tested
-        I_subportion[:,:,channel]=I[max(0,Xc-width_2):min(Xc+width_2,m),max(0,Yc-height_2):min(Yc+height_2,n),channel]
+        I_subportion[:, :, channel] = I[Yc - height_2:Yc + height_2, Xc - width_2:Xc + width_2 , channel]
         I_subportion[:, :, channel]=quantizise_4(I_subportion[:, :, channel],Q_factor-1)
         #bug: why hist has no pixels with 15. I_subportion[:, :, channel] has 15 element
-        hist,bins=(np.histogram(I_subportion[:, :, channel],range=(0,Q_factor-1), bins=Q_factor, density=False))
+        hist,bins=np.histogram(I_subportion[:, :, channel],range=(0,Q_factor-1), bins=Q_factor, density=False)
         #fix edges from right side - necessary only for the case there are not 15 values. but i think not really possible...
         hist = np.pad(hist, (0, Q_factor - len(hist)), mode='constant')
         histogram.append(hist)
     normHist=flatten_histogram(np.asarray(histogram))
-    normHist=np.true_divide(normHist,float(np.sum(normHist)))
+    normHist=np.true_divide(normHist,float(np.sum(normHist)))#normalize by sum
     return normHist
 
 
@@ -57,12 +58,16 @@ def extract_params(S):
 
 def quantizise_4(img, N):
     # uniform quantization of an image to values [0,N]
-    min_val = np.min(img)
-    max_val = np.max(img)
-    quant_range = (max_val - min_val) / N
-    quant_uniform = np.floor((np.floor_divide(img - min_val, quant_range))).astype(int)
+    #min_val = np.min(img)#ORIGINAL
+    #max_val = np.max(img)#ORIGINAL
+    #quant_range = (max_val - min_val) / N
+    #quant_uniform = np.floor((np.floor_divide(img - min_val, quant_range))).astype(int)
     # explanation: we normalize the values of the image to the window quant_uniform, and round down
-    return quant_uniform
+    quant = int(255/N)
+    for j in range(0,N):
+        mask = (img <= (j+1)*quant) & (img >= (j)*quant) #element wise AND
+        img[mask] = j
+    return(img)
 
 def flatten_histogram(histogram):
     #assumes a list of 3 histograms we want to flatten, assume histogram.shape=(n,channels)
@@ -121,13 +126,18 @@ def showParticles(I, S, W, frame_number, ID):
     Xc, Yc, width_2, height_2=extract_params(S_average_filter)
     average_rect = patches.Rectangle((Xc - width_2,Yc - height_2), width_2 * 2, height_2 * 2, linewidth=1,
                                       edgecolor='g', facecolor='none')
+
     fig,ax=plt.subplots(1)
     plt.title('{0}- Frame number = {1}'.format(ID,frame_number))
     ax.imshow(I_RGB)
-    plt.ion()
+    #plt.ion()
     ax.add_patch(maximal_rect)
     ax.add_patch(average_rect)
-    plt.show(block = False)
+    plt.show()
+    #plt.show(block = False)
+
+
+
     return
 
 '''
