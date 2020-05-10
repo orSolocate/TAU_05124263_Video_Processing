@@ -3,21 +3,27 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import cv2
 
-def predictParticles(S_next_tag): 
+def predictParticles(S_next_tag):
     #INPUT  = S_next_tag (previously sampled particles)
     #OUTPUT = S_next (predicted particles. weights and CDF not updated yet)
     N=100
     m,n=S_next_tag.shape
     S_next=np.zeros((m,n))
-    noise_sigma=0.2 #was 2#############################################
-    noise=np.random.normal(0,noise_sigma,(m,N))
+    place_noise_sigma=1 #was 1,nice 1.5
+    velocity_noise_sigma = 0.6  #was 0.5, nice 0.4
+    #noise = np.random.normal(0, noise_sigma, (m, N))
+    place_noise=np.random.normal(0,place_noise_sigma,(2,N))
+    velocity_noise = np.random.normal(0, velocity_noise_sigma, (2, N))
     #width and height cannot change
-    noise[2:4,:]=0
+    #noise[2:4,:]=0
     for j in range(0,n): #column scan
         S_next[:,j]=S_next_tag[:,j]
         S_next[0,j]+=S_next_tag[4,j]#Xvelocity
         S_next[1,j]+=S_next_tag[5,j]#Yvelocity
-        S_next[:,j]+=noise[:,j]
+        #S_next[:,j]+=noise[:,j]
+        S_next[0:2, j] += place_noise[:, j]
+        S_next[4:6, j] += velocity_noise[:, j]
+        #S_next[:, j] += noise[:, j]
         #Xc,Yc are coordinates, must be integers, maybe Xv,Yv, too. easy to modify later if we wish..
         S_next[0:2,j]=S_next[0:2,j].round()
     return S_next
@@ -130,12 +136,13 @@ def showParticles(I, S, W, frame_number, ID):
     fig,ax=plt.subplots(1)
     plt.title('{0}- Frame number = {1}'.format(ID,frame_number))
     ax.imshow(I_RGB)
-    #plt.ion()
+    plt.ion()
     ax.add_patch(maximal_rect)
     ax.add_patch(average_rect)
-    plt.show()
-    #plt.show(block = False)
-
+    plt.savefig('{0}_Frame_number_{1}.png'.format(ID, frame_number))
+    #plt.show()
+    plt.show(block = False)
+    plt.pause(2)
 
 
     return
