@@ -1,0 +1,10 @@
+*.docx
+*.doc
+*.idea
+*.avi
+*.pyc
+<<<<<<< HEAD
+=======
+*.zip
+>>>>>>> parent of 62b4c24... HW2: uploaded I2_warp.png
+*.png
