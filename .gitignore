@@ -6,3 +6,4 @@
 *.png
 *.png
 vp2020*.zip
+__pycache__/*
