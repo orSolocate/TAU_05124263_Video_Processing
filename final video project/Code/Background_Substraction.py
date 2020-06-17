@@ -13,155 +13,113 @@ parser.add_argument('--input', type=str, help='Path to a video or a sequence of 
 parser.add_argument('--algo', type=str, help='Background subtraction method (KNN, MOG2).', default='KNN')
 args = parser.parse_args()
 
-def Background_Substraction():
-    ## [create]
-    #create Background Subtractor objects
-    print("\nBackground_Substraction:")
+def extract_fgMask_list(frame_list):
+    ##############
+    # frame = cv2.medianBlur(frame, 5)
+    # frame = cv2.bilateralFilter(frame, 9, 75, 75)
+    # cv.imshow('real Frame 1', frame)
+    # frame = 255 - cv2.absdiff(frame,background_from_median_filter)
+    # cv.imshow('real Frame 2', frame)
+    # kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+    # frame = cv.filter2D(frame, -1, kernel)
+    # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
+    # frame = cv2.dilate(frame, kernel, iterations=2)  # wider
 
+    # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
+    # frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    # frame[:, :, 0] = cv.equalizeHist(frame[:, :, 0])
+    # frame[:, :, 1] = cv.equalizeHist(frame[:, :, 1])
+    # frame[:, :, 2] = cv.equalizeHist(frame[:, :, 2])
+    # frame = cv2.cvtColor(frame, cv2.COLOR_HSV2RGB)
+    # cv.imshow('equalizeHist', frame)
+
+    # convert image from RGB to HSV
+    # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
+    # Histogram equalisation on the V-channel
+    # frame_hsv[:, :, 2] = cv2.equalizeHist(frame_hsv[:, :, 2])
+    # convert image back from HSV to RGB
+    # frame = cv2.cvtColor(frame_hsv, cv2.COLOR_HSV2RGB)
+
+    # unsharp mask
+    # gaussian_3 = cv2.GaussianBlur(frame, (25, 25), 10.0)
+    # unsharp_image = cv2.addWeighted(frame, 1.5, gaussian_3, -0.5, 0, frame)
+
+    ## [apply]
+    # update the background model
+    # learningRate = 1 the background model is completely reinitialized from the last frame.
+    # learningRate = between 0 and 1 that indicates how fast the background model is learnt.
+    # learningRate = -1 some automatically chosen learning rate
+    # frame = frame[int(bbox[1]):int(bbox[1]+bbox[3]),int(bbox[0]):int(1.1*(bbox[0]+bbox[2])), : ]
+
+    # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+    # frame = cv2.GaussianBlur(frame, (51, 51), 0)
+
+    # In each iteration, calculate absolute difference between current frame and reference frame
+    # difference = cv2.absdiff(gray, first_gray)
+
+    #create Background Subtractor objects
     if args.algo == 'MOG2':
         backSub = cv.createBackgroundSubtractorMOG2()
     else:
-        backSub = cv.createBackgroundSubtractorKNN(config.createBackground_Substraction['history'],
-                                                   config.createBackground_Substraction['dist2Threshold'],
-                                                   config.createBackground_Substraction['detectShadows'])
-    ## [create]
-    # cv.BackgroundSubtractorKNN.setkNNSamples(backSub,50) #How many nearest neighbours need to match.
-    # cv.BackgroundSubtractorKNN.setNSamples(backSub,1) #Sets the number of data samples in the background model.
-
-    ## [capture]
-    if (config.DEMO):
-        capture = cv.VideoCapture(config.demo_stabilized_vid_file)
-    else:
-        capture = cv.VideoCapture(config.stabilized_vid_file)
-
-    #capture = cv.VideoCapture('video_out.avi')
-    n_frames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-    if not capture.isOpened:
-        logging.error('Unable to open: ' + args.input)
-        return
-
-    # Get width and height of video stream
-    w = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-    h = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-    # Get frames per second (fps)
-    fps = capture.get(cv2.CAP_PROP_FPS)
-
-    # Define the codec for output video
-    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-
-    # Set up output video
-    out = cv2.VideoWriter(config.extracted_vid_file, fourcc, fps, (w, h))
-    # Set up output video
-    out_bin = cv2.VideoWriter(config.binary_vid_file, fourcc, fps, (w, h))
-
-    background_from_median_filter = cv2.imread('background_from_median_filter.jpeg')
-    #background = cv2.imread(config.in_background_file)
-
-    print("\nprocess frames..")
-    for iteration in tqdm(range(n_frames)):
-        ret, frame = capture.read()
-        if iteration==0:
-           first_frame = frame
-
-        ##############
-        #frame = cv2.medianBlur(frame, 5)
-        #frame = cv2.bilateralFilter(frame, 9, 75, 75)
-        #cv.imshow('real Frame 1', frame)
-        #frame = 255 - cv2.absdiff(frame,background_from_median_filter)
-        #cv.imshow('real Frame 2', frame)
-        #kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
-        #frame = cv.filter2D(frame, -1, kernel)
-        #kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
-        #frame = cv2.dilate(frame, kernel, iterations=2)  # wider
-
-        #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
-        #frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        #frame[:, :, 0] = cv.equalizeHist(frame[:, :, 0])
-        #frame[:, :, 1] = cv.equalizeHist(frame[:, :, 1])
-        #frame[:, :, 2] = cv.equalizeHist(frame[:, :, 2])
-        #frame = cv2.cvtColor(frame, cv2.COLOR_HSV2RGB)
-        #cv.imshow('equalizeHist', frame)
-
-        # convert image from RGB to HSV
-        #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
-        # Histogram equalisation on the V-channel
-        #frame_hsv[:, :, 2] = cv2.equalizeHist(frame_hsv[:, :, 2])
-        # convert image back from HSV to RGB
-        #frame = cv2.cvtColor(frame_hsv, cv2.COLOR_HSV2RGB)
-
-        #unsharp mask
-        #gaussian_3 = cv2.GaussianBlur(frame, (25, 25), 10.0)
-        #unsharp_image = cv2.addWeighted(frame, 1.5, gaussian_3, -0.5, 0, frame)
-
-
-        ## [apply]
-        #update the background model
-        #learningRate = 1 the background model is completely reinitialized from the last frame.
-        #learningRate = between 0 and 1 that indicates how fast the background model is learnt.
-        #learningRate = -1 some automatically chosen learning rate
-        #frame = frame[int(bbox[1]):int(bbox[1]+bbox[3]),int(bbox[0]):int(1.1*(bbox[0]+bbox[2])), : ]
-
-        #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
-        #frame = cv2.GaussianBlur(frame, (51, 51), 0)
-
-        #In each iteration, calculate absolute difference between current frame and reference frame
-        #difference = cv2.absdiff(gray, first_gray)
-        fgMask = backSub.apply(frame, learningRate=-1)  # learningrate was -1
-        #frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
+        backSub = cv.createBackgroundSubtractorKNN(history=config.createBackground_Substraction['history'],
+                                                   dist2Threshold=config.createBackground_Substraction['dist2Threshold'],
+                                                   detectShadows=config.createBackground_Substraction['detectShadows'])
+    fgMask_list=[]
+    for frame in tqdm(frame_list):
+        fgMask = backSub.apply(frame, learningRate=config.backSub_apply['learningRate'])
+        # frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
 
         ## [apply]
 
         ## [display_frame_number]
-        #get the frame number and write it on the current frame
-        #cv.rectangle(frame, (10, 2), (100,20), (255,255,255), -1)
-        #cv.putText(frame, str(capture.get(cv.CAP_PROP_POS_FRAMES)), (15, 15),
+        # get the frame number and write it on the current frame
+        # cv.rectangle(frame, (10, 2), (100,20), (255,255,255), -1)
+        # cv.putText(frame, str(capture.get(cv.CAP_PROP_POS_FRAMES)), (15, 15),
         #           cv.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
         ## [display_frame_number]
 
-
-        #yonatan's add
+        # yonatan's add
         ###############################################################################################
-        #if (iteration <= int(n_frames / 4)): # 0 to 1
+        # if (iteration <= int(n_frames / 4)): # 0 to 1
         #    fgMask[:, int(1.8*1 * fgMask.shape[1]/4):int(4*fgMask.shape[1]/4)]=0
 
-        #if (iteration <= int(2*n_frames / 4) and (iteration >= 1*n_frames/4)): #1 to 2
+        # if (iteration <= int(2*n_frames / 4) and (iteration >= 1*n_frames/4)): #1 to 2
         #    fgMask[:, int(0 * fgMask.shape[1]/4):int(0.8*1*fgMask.shape[1]/4)]=0
         #    fgMask[:, int(1.4*2 * fgMask.shape[1]/4):int(4*fgMask.shape[1]/4)]=0
 
-        #if (iteration <= 3*n_frames / 4) and (iteration >= 2*n_frames/4): #2 to 3
+        # if (iteration <= 3*n_frames / 4) and (iteration >= 2*n_frames/4): #2 to 3
         #    fgMask[:, int(0 * fgMask.shape[1]/4):int(0.8*2*fgMask.shape[1]/4)]=0
         #    fgMask[:, int(1.4*3 * fgMask.shape[1]/4):int(4*fgMask.shape[1]/4)]=0
 
-        #if (iteration <= 4*n_frames / 4) and (iteration >= 3*n_frames / 4): #3 to 4
+        # if (iteration <= 4*n_frames / 4) and (iteration >= 3*n_frames / 4): #3 to 4
         #    fgMask[:, int(0 * fgMask.shape[1]):int(0.8*3* fgMask.shape[1] / 4)]=0
         ##############################################################################################
 
-        #kernel = np.ones((5,5),np.uint8)
-        #kernel = cv2.getStructuringElement(cv2.MORPH_CROSS,(5,5))
+        # kernel = np.ones((5,5),np.uint8)
+        # kernel = cv2.getStructuringElement(cv2.MORPH_CROSS,(5,5))
         fgMask[fgMask < 254] = 0
-        #kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
-        #fgMask = cv2.erode(fgMask, kernel, iterations=1)  # thiner
+        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
+        # fgMask = cv2.erode(fgMask, kernel, iterations=1)  # thiner
 
         ####amazing results!!!!!!!!!!!!!!
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 10))  # 20,10
-        fgMask = cv2.erode(fgMask, kernel, iterations=2)  # thiner 1
+        fgMask = cv2.erode(fgMask, kernel, iterations=config.erode['iterations'])
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # 5,5
-        fgMask = cv2.dilate(fgMask, kernel, iterations=5)  # wider 5
+        fgMask = cv2.dilate(fgMask, kernel, iterations=config.dilate['iterations'])
         # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10,10))
         # fgMask = cv2.erode(fgMask, kernel, iterations=1)  # thiner
         #################################
 
         #############BLOB DETECTOR- black
-        #INVERT MASK
+        # INVERT MASK
         fgMask = cv2.bitwise_not(fgMask)
 
         # # Setup SimpleBlobDetector parameters.
         params = cv2.SimpleBlobDetector_Params()
 
         # Change thresholds
-        params.minThreshold = 0  #10
-        params.maxThreshold = 200  #200
+        params.minThreshold = 0  # 10
+        params.maxThreshold = 200  # 200
 
         # Filter by Area.
         params.filterByArea = True
@@ -227,39 +185,116 @@ def Background_Substraction():
         # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))  # 5,5
         # fgMask = cv2.dilate(fgMask, kernel, iterations=1)  # wider 5
 
-        #fgMask = cv2.morphologyEx(fgMask, cv2.MORPH_OPEN, kernel)
-        #fgMask[fgMask < 150] = 0
+        # fgMask = cv2.morphologyEx(fgMask, cv2.MORPH_OPEN, kernel)
+        # fgMask[fgMask < 150] = 0
 
-        #fgMask = cv2.bilateralFilter(fgMask, 9, 250, 250)
-        #fgMask = cv2.dilate(fgMask, kernel, iterations=4)  # wider
+        # fgMask = cv2.bilateralFilter(fgMask, 9, 250, 250)
+        # fgMask = cv2.dilate(fgMask, kernel, iterations=4)  # wider
 
-        #fgMask = cv2.medianBlur(fgMask, 21)
-        fgMask = fgMask/255
-        #frame = fgMask * frame #for grayscale images
+        # fgMask = cv2.medianBlur(fgMask, 21)
+        fgMask = fgMask / 255
+        fgMask_list.append(fgMask)
+
+        # FRAME MANIPULATION!#
         frame[:, :, 0] = fgMask * frame[:, :, 0]
         frame[:, :, 1] = fgMask * frame[:, :, 1]
         frame[:, :, 2] = fgMask * frame[:, :, 2]
-        #hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
-        #hsv[:,:,1] = hsv[:,:,1]*fgMask
-        #frame = cv2.cvtColor(hsv,cv2.COLOR_HSV2BGR)
-        #print(frame.shape)  (1080,1920,3)
+        # frame = fgMask * frame #for grayscale images
+    return fgMask_list
 
-        ## [show - DEBUG]
-        #show the current frame and the fg masks
+def reversed_process(frame_list): #it didn't help - but this is the functoin...
+    frame_list_rev=frame_list.copy()
+    frame_list_rev.reverse()
+    print("\nprocessing reversed frames..")
+    fgMask_list_reversed = extract_fgMask_list(frame_list_rev)
+    frame_list_rev.reverse()
+    fgMask_list_reversed.reverse()
+    return frame_list_rev,fgMask_list_reversed
 
-        cv.imshow('Frame', frame)
-        cv.imshow('FG Mask', fgMask)
-        #wait a few seconds
-        keyboard = cv.waitKey(1)
-        if keyboard == 'q' or keyboard == 27:
+
+def Background_Substraction():
+    ## [create]
+    print("\nBackground_Substraction:")
+
+    ## [create]
+    # cv.BackgroundSubtractorKNN.setkNNSamples(backSub,50) #How many nearest neighbours need to match.
+    # cv.BackgroundSubtractorKNN.setNSamples(backSub,1) #Sets the number of data samples in the background model.
+
+    ## [capture]
+    if (config.DEMO):
+        capture = cv.VideoCapture(config.demo_stabilized_vid_file)
+    else:
+        capture = cv.VideoCapture(config.stabilized_vid_file)
+    n_frames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    if not capture.isOpened:
+        logging.error('Unable to open: ' + args.input)
+        return
+    # Get width and height of video stream
+    w = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    # Get frames per second (fps)
+    fps = capture.get(cv2.CAP_PROP_FPS)
+    # Define the codec for output video
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    # Set up output video
+    out = cv2.VideoWriter(config.extracted_vid_file, fourcc, fps, (w, h))
+    # Set up output video
+    out_bin = cv2.VideoWriter(config.binary_vid_file, fourcc, fps, (w, h))
+
+    background_from_median_filter = cv2.imread('background_from_median_filter.jpeg')
+    #background = cv2.imread(config.in_background_file)
+
+    print("\nextracting frames..")
+    frame_list = []
+    for i in tqdm(range(n_frames)):
+        ret, frame = capture.read()
+        if (ret==False): #sanity check
             break
-        ## [show]
-        if (iteration >= 6):
-            out.write(frame)
-            fgMask = np.uint8(255*fgMask)
-            fgMask = cv2.cvtColor(fgMask, cv2.COLOR_GRAY2RGB)
-            out_bin.write(fgMask)
-            logging.debug('processing frame number %d', iteration)
+        frame_list.append(frame)
+        #if iteration==0:
+        #   first_frame = frame
+
+    #frame_list_rev, fgMask_list_reversed=reversed_process(frame_list)
+    print("\nprocessing forward frames..")
+    fgMask_list_forward=extract_fgMask_list(frame_list)
+
+
+    #hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
+    #hsv[:,:,1] = hsv[:,:,1]*fgMask
+    #frame = cv2.cvtColor(hsv,cv2.COLOR_HSV2BGR)
+    #print(frame.shape)  (1080,1920,3)
+
+    ## [show - DEBUG]
+    #show the current frame and the fg masks
+
+    #cv.imshow('Frame', frame)
+    #cv.imshow('FG Mask', fgMask)
+    #wait a few seconds
+    #keyboard = cv.waitKey(1)
+    #if keyboard == 'q' or keyboard == 27:
+    #    break
+
+    # [write frame to .avi]
+    print("\nwrite extracted.avi and binary.avi")
+    img2gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    ret, mask = cv.threshold(img2gray, 10, 255, cv.THRESH_BINARY)
+    for i in tqdm(range(len(frame_list))):
+        #if (iteration >= 6):
+        frame=frame_list[i]
+        frame=frame_list[i]
+        #frame_list[i]=cv.bitwise_and(frame_list[i],frame_list[i],mask=mask)
+        #frame_list_rev[i]=cv.bitwise_and(frame_list_rev[i],frame_list_rev[i],mask=mask)
+        #frame=cv.add(frame_list[i],frame_list_rev[i])
+        fgMask=fgMask_list_forward[i]
+        #fgMask_list_forward[i] = cv.bitwise_and(fgMask_list_forward[i], fgMask_list_forward[i], mask=mask)
+        #fgMask_list_reversed[i] = cv.bitwise_and(fgMask_list_reversed[i], fgMask_list_reversed[i], mask=mask)
+        #fgMask = cv.add(fgMask_list_forward[i], fgMask_list_reversed[i])
+        #fgMask=cv.bitwise_or(fgMask_list_forward[i],fgMask_list_reversed[i])
+        out.write(frame)
+        fgMask = np.uint8(255*fgMask)
+        fgMask = cv2.cvtColor(fgMask, cv2.COLOR_GRAY2RGB)
+        out_bin.write(fgMask)
+        logging.debug('processing frame number %d', i)
 
     # Release video
     cv2.destroyAllWindows()

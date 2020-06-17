@@ -37,3 +37,6 @@ calcOpticalFlowPyrLK = dict(winSize=(50, 50),
 createBackground_Substraction=dict(history = 120,
                              dist2Threshold = 400.0,
                              detectShadows = True)
+backSub_apply=dict(learningRate=0.1) # learningrate was -1
+erode=dict(iterations=2) # thiner 1
+dilate=dict(iterations=5) # wider 5
