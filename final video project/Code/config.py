@@ -6,13 +6,21 @@ cur_path = osp.split(osp.dirname(osp.abspath(__file__)))[0]
 log_file=osp.join(cur_path,'Outputs','RunTimeLog.txt')
 logging.basicConfig(filename=log_file, filemode='w', level=logging.INFO) #for debug: logging.DEBUG
 
-# ~~~ runme ~~~ #
+# ~~~ DEMO ~~~ #
+DEMO=True
+
+# ~~~ file paths ~~~ #
 in_vid_file = osp.join(cur_path, 'Input', 'INPUT.avi')
 stabilized_vid_file = osp.join(cur_path, 'Outputs', 'stabilize.avi')
 demo_stabilized_vid_file = osp.join(cur_path, 'Outputs', 'Stabilized_Example_INPUT.avi')
 extracted_vid_file = osp.join(cur_path, 'Outputs', 'extracted.avi')
 binary_vid_file = osp.join(cur_path, 'Outputs', 'binary.avi')
-in_background_file = osp.join(cur_path, 'Input', 'background.jpeg')
+in_background_file = osp.join(cur_path, 'Input', 'background.jpg')
+matted_vid_file = osp.join(cur_path, 'Outputs', 'matted.avi')
+alpha_vid_file = osp.join(cur_path, 'Outputs', 'alpha.avi')
+un_alpha_vid_file = osp.join(cur_path, 'Outputs', 'unstabilized_alpha.avi')
+out_vid_file = osp.join(cur_path, 'Outputs', 'OUTPUT.avi')
+
 
 
 # ~~~ Video_Stabilization ~~~ #

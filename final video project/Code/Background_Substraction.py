@@ -3,8 +3,7 @@ import cv2 as cv
 import cv2
 import numpy as np
 import argparse
-import sys
-from Code import config
+import config
 import logging
 from tqdm import tqdm
 
@@ -26,16 +25,20 @@ def Background_Substraction():
                                                    config.createBackground_Substraction['dist2Threshold'],
                                                    config.createBackground_Substraction['detectShadows'])
     ## [create]
-
+    # cv.BackgroundSubtractorKNN.setkNNSamples(backSub,50) #How many nearest neighbours need to match.
+    # cv.BackgroundSubtractorKNN.setNSamples(backSub,1) #Sets the number of data samples in the background model.
 
     ## [capture]
-    capture = cv.VideoCapture(config.demo_stabilized_vid_file)
+    if (config.DEMO):
+        capture = cv.VideoCapture(config.demo_stabilized_vid_file)
+    else:
+        capture = cv.VideoCapture(config.stabilized_vid_file)
+
     #capture = cv.VideoCapture('video_out.avi')
     n_frames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
     if not capture.isOpened:
-        print('Unable to open: ' + args.input)
-        exit(0)
-    ## [capture]
+        logging.error('Unable to open: ' + args.input)
+        return
 
     # Get width and height of video stream
     w = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -52,122 +55,61 @@ def Background_Substraction():
     # Set up output video
     out_bin = cv2.VideoWriter(config.binary_vid_file, fourcc, fps, (w, h))
 
-
+    background_from_median_filter = cv2.imread('background_from_median_filter.jpeg')
     #background = cv2.imread(config.in_background_file)
 
-    #########################################################
-    # Start timer
-    timer = cv2.getTickCount()
-
-        # Set up tracker.
-        # Instead of MIL, you can also use
-
-    tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'CSRT']
-    tracker_type = tracker_types[2]
-
-    if tracker_type == 'BOOSTING':
-        tracker = cv2.TrackerBoosting_create()
-    if tracker_type == 'MIL':
-        tracker = cv2.TrackerMIL_create()
-    if tracker_type == 'KCF':
-        tracker = cv2.TrackerKCF_create()
-    if tracker_type == 'TLD':
-        tracker = cv2.TrackerTLD_create()
-    if tracker_type == 'MEDIANFLOW':
-        tracker = cv2.TrackerMedianFlow_create()
-    if tracker_type == 'GOTURN':
-        tracker = cv2.TrackerGOTURN_create()
-    if tracker_type == "CSRT":
-        tracker = cv2.TrackerCSRT_create()
-
-    # Define an initial bounding box
-    bbox = (0, 200, 330, 815)
-    # Uncomment the line below to select a different bounding box
-    ok,frame = capture.read()
-    if not ok:
-        logging.error('Cannot read video file')
-        sys.exit()
-
-    #bbox = cv2.selectROI(frame, False)
-    #print(bbox)
-    #########################################################
-
-    #while True:
     print("\nprocess frames..")
     for iteration in tqdm(range(n_frames)):
-        if iteration != 0:
-            ret, frame = capture.read()
-
-        if frame is None:
-            break
-
+        ret, frame = capture.read()
         if iteration==0:
            first_frame = frame
-
-        ######tracker
-        # Initialize tracker with first frame and bounding box
-        ok = tracker.init(frame, bbox)
-        # Update tracker
-        ok, bbox = tracker.update(frame)
-
-        # Calculate Frames per second (FPS)
-        fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer);
-
-        # Draw bounding box
-        #if ok:
-            # Tracking success
-            #p1 = (int(bbox[0]), int(bbox[1]))
-            #p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-            #cv2.rectangle(frame, p1, p2, (255, 0, 0), 2, 1)
-        #else:
-            # Tracking failure
-            # cv2.putText(frame, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
-
-        # Display tracker type on frame
-        cv2.putText(frame, tracker_type + " Tracker", (100, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2);
-
-        # Display FPS on frame
-        cv2.putText(frame, "FPS : " + str(int(fps)), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2);
 
         ##############
         #frame = cv2.medianBlur(frame, 5)
         #frame = cv2.bilateralFilter(frame, 9, 75, 75)
         #cv.imshow('real Frame 1', frame)
-        #frame = 255 - cv2.absdiff(frame,background)
+        #frame = 255 - cv2.absdiff(frame,background_from_median_filter)
         #cv.imshow('real Frame 2', frame)
         #kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
         #frame = cv.filter2D(frame, -1, kernel)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
-        frame = cv2.dilate(frame, kernel, iterations=2)  # wider
+        #kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
+        #frame = cv2.dilate(frame, kernel, iterations=2)  # wider
 
-        #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        #frame[:, 1, :] = 1.5*frame[:, 1, :]
-        #frame[:, :, 1] = 1.5 * frame[:, :, 1]
-        #frame[1, :, :] = 1.5 * frame[1, :, :]
+        #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
         #frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        #frame = cv.equalizeHist(frame)
+        #frame[:, :, 0] = cv.equalizeHist(frame[:, :, 0])
+        #frame[:, :, 1] = cv.equalizeHist(frame[:, :, 1])
+        #frame[:, :, 2] = cv.equalizeHist(frame[:, :, 2])
+        #frame = cv2.cvtColor(frame, cv2.COLOR_HSV2RGB)
         #cv.imshow('equalizeHist', frame)
 
         # convert image from RGB to HSV
-        #frame_hsv = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
+        #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
         # Histogram equalisation on the V-channel
         #frame_hsv[:, :, 2] = cv2.equalizeHist(frame_hsv[:, :, 2])
         # convert image back from HSV to RGB
         #frame = cv2.cvtColor(frame_hsv, cv2.COLOR_HSV2RGB)
 
+        #unsharp mask
+        #gaussian_3 = cv2.GaussianBlur(frame, (25, 25), 10.0)
+        #unsharp_image = cv2.addWeighted(frame, 1.5, gaussian_3, -0.5, 0, frame)
 
 
         ## [apply]
         #update the background model
-        # learningRate = 1 the background model is completely reinitialized from the last frame.
-        # learningRate = between 0 and 1 that indicates how fast the background model is learnt.
-        # learningRate = -1 some automatically chosen learning rate
+        #learningRate = 1 the background model is completely reinitialized from the last frame.
+        #learningRate = between 0 and 1 that indicates how fast the background model is learnt.
+        #learningRate = -1 some automatically chosen learning rate
         #frame = frame[int(bbox[1]):int(bbox[1]+bbox[3]),int(bbox[0]):int(1.1*(bbox[0]+bbox[2])), : ]
-        fgMask = backSub.apply(frame,learningRate = -1) # learningrate
-        fgMask[:,0:int(bbox[0])] = 0
-        fgMask[0:int(bbox[1]),:] = 0
-        fgMask[:,int(bbox[0]+bbox[2]):] = 0
-        fgMask[int(bbox[1]+bbox[3]):,:] = 0
+
+        #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+        #frame = cv2.GaussianBlur(frame, (51, 51), 0)
+
+        #In each iteration, calculate absolute difference between current frame and reference frame
+        #difference = cv2.absdiff(gray, first_gray)
+        fgMask = backSub.apply(frame, learningRate=-1)  # learningrate was -1
+        #frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
+
         ## [apply]
 
         ## [display_frame_number]
@@ -201,10 +143,89 @@ def Background_Substraction():
         #kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
         #fgMask = cv2.erode(fgMask, kernel, iterations=1)  # thiner
 
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2,2))
-        fgMask = cv2.erode(fgMask, kernel, iterations=4)  # thiner
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2,2 ))
-        fgMask = cv2.dilate(fgMask, kernel, iterations=2)  # wider
+        ####amazing results!!!!!!!!!!!!!!
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 10))  # 20,10
+        fgMask = cv2.erode(fgMask, kernel, iterations=2)  # thiner 1
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # 5,5
+        fgMask = cv2.dilate(fgMask, kernel, iterations=5)  # wider 5
+        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10,10))
+        # fgMask = cv2.erode(fgMask, kernel, iterations=1)  # thiner
+        #################################
+
+        #############BLOB DETECTOR- black
+        #INVERT MASK
+        fgMask = cv2.bitwise_not(fgMask)
+
+        # # Setup SimpleBlobDetector parameters.
+        params = cv2.SimpleBlobDetector_Params()
+
+        # Change thresholds
+        params.minThreshold = 0  #10
+        params.maxThreshold = 200  #200
+
+        # Filter by Area.
+        params.filterByArea = True
+        params.minArea = 0.01  # 1500
+        # params.maxArea = 100
+
+        # Filter by Circularity
+        params.filterByCircularity = True
+        params.minCircularity = 0.1
+
+        # Filter by Convexity
+        params.filterByConvexity = True
+        params.minConvexity = 0.01  # 0.87
+
+        # Filter by Inertia
+        params.filterByInertia = True
+        params.minInertiaRatio = 0.01
+
+        # Create a detector with the parameters
+        ver = (cv2.__version__).split('.')
+        if int(ver[0]) < 3:
+            detector = cv2.SimpleBlobDetector(params)
+        else:
+            detector = cv2.SimpleBlobDetector_create(params)
+
+        # Detect blobs.
+        keypoints = detector.detect(fgMask)
+
+        # Draw detected blobs as red circles.
+        # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures
+        # the size of the circle corresponds to the size of blob
+
+        im_with_keypoints = cv2.drawKeypoints(fgMask, keypoints, np.array([]), (0, 0, 255),
+                                              cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+        for keyPoint in keypoints:
+            x = int(keyPoint.pt[0])
+            y = int(keyPoint.pt[1])
+            s = keyPoint.size  # the diameter of the blob
+            # Center coordinates
+            center_coordinates = (x, y)
+            # Radius of circle
+            radius = int(s)
+            # white color in BGR
+            color = (255, 255, 255)
+
+            # Line thickness of 2 px
+            thickness = 1
+
+            # Using cv2.circle() method
+            # Draw a circle with blue line borders of thickness of 2 px
+            if (s <= 50):
+                fgMask = cv2.circle(fgMask, center_coordinates, radius, color, cv.FILLED)  # cv.FILLED
+
+        fgMask = cv2.bitwise_not(fgMask)  # invert image to original
+
+        # Show blobs
+        # cv2.imshow("Keypoints", im_with_keypoints)
+        # cv2.waitKey(0)
+
+        #############
+        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # 20,10
+        # fgMask = cv2.erode(fgMask, kernel, iterations=3)  # thiner 1
+        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))  # 5,5
+        # fgMask = cv2.dilate(fgMask, kernel, iterations=1)  # wider 5
 
         #fgMask = cv2.morphologyEx(fgMask, cv2.MORPH_OPEN, kernel)
         #fgMask[fgMask < 150] = 0
@@ -225,6 +246,7 @@ def Background_Substraction():
 
         ## [show - DEBUG]
         #show the current frame and the fg masks
+
         cv.imshow('Frame', frame)
         cv.imshow('FG Mask', fgMask)
         #wait a few seconds
@@ -232,11 +254,12 @@ def Background_Substraction():
         if keyboard == 'q' or keyboard == 27:
             break
         ## [show]
-        out.write(frame)
-        fgMask = np.uint8(255*fgMask)
-        fgMask = cv2.cvtColor(fgMask, cv2.COLOR_GRAY2RGB)
-        out_bin.write(fgMask)
-        logging.debug('processing frame number %d', iteration)
+        if (iteration >= 6):
+            out.write(frame)
+            fgMask = np.uint8(255*fgMask)
+            fgMask = cv2.cvtColor(fgMask, cv2.COLOR_GRAY2RGB)
+            out_bin.write(fgMask)
+            logging.debug('processing frame number %d', iteration)
 
     # Release video
     cv2.destroyAllWindows()

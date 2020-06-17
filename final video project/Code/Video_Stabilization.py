@@ -1,7 +1,6 @@
-# Import numpy and OpenCV
 import cv2
 import numpy as np
-from Code import config
+import config
 import logging
 from tqdm import tqdm
 
