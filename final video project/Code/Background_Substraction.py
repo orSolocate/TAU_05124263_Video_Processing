@@ -7,11 +7,10 @@ import config
 import logging
 from tqdm import tqdm
 
-parser = argparse.ArgumentParser(description='This program shows how to use background subtraction methods provided by \
-                                              OpenCV. You can process both videos and images.')
-parser.add_argument('--input', type=str, help='Path to a video or a sequence of image.', default='Stabilized_Example_INPUT.avi')
+parser = argparse.ArgumentParser(description='KNN parser')
 parser.add_argument('--algo', type=str, help='Background subtraction method (KNN, MOG2).', default='KNN')
 args = parser.parse_args()
+
 
 def extract_fgMask_list(frame_list):
     ##############
@@ -57,14 +56,15 @@ def extract_fgMask_list(frame_list):
     # In each iteration, calculate absolute difference between current frame and reference frame
     # difference = cv2.absdiff(gray, first_gray)
 
-    #create Background Subtractor objects
+    # create Background Subtractor objects
     if args.algo == 'MOG2':
         backSub = cv.createBackgroundSubtractorMOG2()
     else:
         backSub = cv.createBackgroundSubtractorKNN(history=config.createBackground_Substraction['history'],
-                                                   dist2Threshold=config.createBackground_Substraction['dist2Threshold'],
+                                                   dist2Threshold=config.createBackground_Substraction[
+                                                       'dist2Threshold'],
                                                    detectShadows=config.createBackground_Substraction['detectShadows'])
-    fgMask_list=[]
+    fgMask_list = []
     for frame in tqdm(frame_list):
         fgMask = backSub.apply(frame, learningRate=config.backSub_apply['learningRate'])
         # frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
@@ -102,12 +102,12 @@ def extract_fgMask_list(frame_list):
         # fgMask = cv2.erode(fgMask, kernel, iterations=1)  # thiner
 
         ####amazing results!!!!!!!!!!!!!!
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 10))  # 20,10
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.erode['struct_size'])
         fgMask = cv2.erode(fgMask, kernel, iterations=config.erode['iterations'])
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # 5,5
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.dilate['struct_size'])
         fgMask = cv2.dilate(fgMask, kernel, iterations=config.dilate['iterations'])
         # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10,10))
-        # fgMask = cv2.erode(fgMask, kernel, iterations=1)  # thiner
+        # fgMask = cv2.erode(fgMask, kernel, iterations=1)  # thinner
         #################################
 
         #############BLOB DETECTOR- black
@@ -202,14 +202,15 @@ def extract_fgMask_list(frame_list):
         # frame = fgMask * frame #for grayscale images
     return fgMask_list
 
-def reversed_process(frame_list): #it didn't help - but this is the functoin...
-    frame_list_rev=frame_list.copy()
+
+def reversed_process(frame_list):  # it didn't help - but this is the functoin...
+    frame_list_rev = frame_list.copy()
     frame_list_rev.reverse()
     print("\nprocessing reversed frames..")
     fgMask_list_reversed = extract_fgMask_list(frame_list_rev)
     frame_list_rev.reverse()
     fgMask_list_reversed.reverse()
-    return frame_list_rev,fgMask_list_reversed
+    return frame_list_rev, fgMask_list_reversed
 
 
 def Background_Substraction():
@@ -242,36 +243,35 @@ def Background_Substraction():
     out_bin = cv2.VideoWriter(config.binary_vid_file, fourcc, fps, (w, h))
 
     background_from_median_filter = cv2.imread('background_from_median_filter.jpeg')
-    #background = cv2.imread(config.in_background_file)
+    # background = cv2.imread(config.in_background_file)
 
     print("\nextracting frames..")
     frame_list = []
     for i in tqdm(range(n_frames)):
         ret, frame = capture.read()
-        if (ret==False): #sanity check
+        if (ret == False):  # sanity check
             break
         frame_list.append(frame)
-        #if iteration==0:
+        # if iteration==0:
         #   first_frame = frame
 
-    #frame_list_rev, fgMask_list_reversed=reversed_process(frame_list)
+    # frame_list_rev, fgMask_list_reversed=reversed_process(frame_list)
     print("\nprocessing forward frames..")
-    fgMask_list_forward=extract_fgMask_list(frame_list)
+    fgMask_list_forward = extract_fgMask_list(frame_list)
 
-
-    #hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
-    #hsv[:,:,1] = hsv[:,:,1]*fgMask
-    #frame = cv2.cvtColor(hsv,cv2.COLOR_HSV2BGR)
-    #print(frame.shape)  (1080,1920,3)
+    # hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
+    # hsv[:,:,1] = hsv[:,:,1]*fgMask
+    # frame = cv2.cvtColor(hsv,cv2.COLOR_HSV2BGR)
+    # print(frame.shape)  (1080,1920,3)
 
     ## [show - DEBUG]
-    #show the current frame and the fg masks
+    # show the current frame and the fg masks
 
-    #cv.imshow('Frame', frame)
-    #cv.imshow('FG Mask', fgMask)
-    #wait a few seconds
-    #keyboard = cv.waitKey(1)
-    #if keyboard == 'q' or keyboard == 27:
+    # cv.imshow('Frame', frame)
+    # cv.imshow('FG Mask', fgMask)
+    # wait a few seconds
+    # keyboard = cv.waitKey(1)
+    # if keyboard == 'q' or keyboard == 27:
     #    break
 
     # [write frame to .avi]
@@ -279,19 +279,19 @@ def Background_Substraction():
     img2gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     ret, mask = cv.threshold(img2gray, 10, 255, cv.THRESH_BINARY)
     for i in tqdm(range(len(frame_list))):
-        #if (iteration >= 6):
-        frame=frame_list[i]
-        frame=frame_list[i]
-        #frame_list[i]=cv.bitwise_and(frame_list[i],frame_list[i],mask=mask)
-        #frame_list_rev[i]=cv.bitwise_and(frame_list_rev[i],frame_list_rev[i],mask=mask)
-        #frame=cv.add(frame_list[i],frame_list_rev[i])
-        fgMask=fgMask_list_forward[i]
-        #fgMask_list_forward[i] = cv.bitwise_and(fgMask_list_forward[i], fgMask_list_forward[i], mask=mask)
-        #fgMask_list_reversed[i] = cv.bitwise_and(fgMask_list_reversed[i], fgMask_list_reversed[i], mask=mask)
-        #fgMask = cv.add(fgMask_list_forward[i], fgMask_list_reversed[i])
-        #fgMask=cv.bitwise_or(fgMask_list_forward[i],fgMask_list_reversed[i])
+        # if (iteration >= 6):
+        frame = frame_list[i]
+        frame = frame_list[i]
+        # frame_list[i]=cv.bitwise_and(frame_list[i],frame_list[i],mask=mask)
+        # frame_list_rev[i]=cv.bitwise_and(frame_list_rev[i],frame_list_rev[i],mask=mask)
+        # frame=cv.add(frame_list[i],frame_list_rev[i])
+        fgMask = fgMask_list_forward[i]
+        # fgMask_list_forward[i] = cv.bitwise_and(fgMask_list_forward[i], fgMask_list_forward[i], mask=mask)
+        # fgMask_list_reversed[i] = cv.bitwise_and(fgMask_list_reversed[i], fgMask_list_reversed[i], mask=mask)
+        # fgMask = cv.add(fgMask_list_forward[i], fgMask_list_reversed[i])
+        # fgMask=cv.bitwise_or(fgMask_list_forward[i],fgMask_list_reversed[i])
         out.write(frame)
-        fgMask = np.uint8(255*fgMask)
+        fgMask = np.uint8(255 * fgMask)
         fgMask = cv2.cvtColor(fgMask, cv2.COLOR_GRAY2RGB)
         out_bin.write(fgMask)
         logging.debug('processing frame number %d', i)
