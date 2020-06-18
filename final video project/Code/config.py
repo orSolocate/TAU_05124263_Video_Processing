@@ -7,7 +7,8 @@ log_file = osp.join(cur_path, 'Outputs', 'RunTimeLog.txt')
 logging.basicConfig(filename=log_file, filemode='w', level=logging.INFO)  # for debug: logging.DEBUG
 
 # ~~~ DEMO ~~~ #
-DEMO = True
+DEMO = True #True for given stabilized
+unstable=False
 
 # ~~~ file paths ~~~ #
 in_vid_file = osp.join(cur_path, 'Input', 'INPUT.avi')

@@ -140,14 +140,17 @@ def geo_distance(frame, scrible_pos, isPlotted):
 def Matting():
 
     print("\nMatting:")
-    if (config.DEMO):
-        capture_stab = cv.VideoCapture(config.demo_stabilized_vid_file)
-        n_frames_stab,fourcc, fps, out_size=video_handling.extract_video_params(capture_stab)
-        alpha_out = cv.VideoWriter(config.un_alpha_vid_file, fourcc, fps, out_size)
-    else:
-        capture_stab = cv.VideoCapture(config.stabilized_vid_file)
+    if not (config.unstable):
+        if (config.DEMO):
+            capture_stab = cv.VideoCapture(config.demo_stabilized_vid_file)
+        else:
+            capture_stab = cv.VideoCapture(config.stabilized_vid_file)
         n_frames_stab,fourcc, fps, out_size=video_handling.extract_video_params(capture_stab)
         alpha_out = cv.VideoWriter(config.alpha_vid_file, fourcc, fps, out_size)
+    else:
+        capture_stab = cv.VideoCapture(config.in_vid_file)
+        n_frames_stab,fourcc, fps, out_size=video_handling.extract_video_params(capture_stab)
+        alpha_out = cv.VideoWriter(config.un_alpha_vid_file, fourcc, fps, out_size)
 
     capture_bin = cv.VideoCapture(config.binary_vid_file)
     n_frames_bin, fourcc_bin, fps_bin, out_size_bin = video_handling.extract_video_params(capture_bin)
@@ -200,6 +203,8 @@ def Matting():
 
 
     print("\nprocess frames..")
+    forePlotted = config.forePlotted
+    backPlotted = config.backPlotted
     for iteration in tqdm(range(1,min(n_frames_stab,n_frames_bin)-config.MAT_frame_reduction_DEBUG)): #why do you start from 1??
     #iteration = 0
     #while True:
@@ -267,8 +272,6 @@ def Matting():
         frame_bin = frame_bin/255
 
         #calculate KDE for background and foreground
-        forePlotted=config.forePlotted
-        backPlotted=config.backPlotted
         kde_fore_pdf=kde_evaluate(foreground_array,forePlotted,title='Kernel Density Estimation - Background')
         kde_back_pdf=kde_evaluate(background_array,backPlotted,title='Kernel Density Estimation - Foreground')
 
