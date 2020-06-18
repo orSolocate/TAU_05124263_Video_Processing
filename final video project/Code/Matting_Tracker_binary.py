@@ -138,7 +138,6 @@ def geo_distance(frame, scrible_pos, isPlotted):
 
 
 def Matting():
-
     print("\nMatting:")
     if not (config.unstable):
         if (config.DEMO):
@@ -274,7 +273,6 @@ def Matting():
         #calculate KDE for background and foreground
         kde_fore_pdf=kde_evaluate(foreground_array,forePlotted,title='Kernel Density Estimation - Background')
         kde_back_pdf=kde_evaluate(background_array,backPlotted,title='Kernel Density Estimation - Foreground')
-
 
         #probabilties of background and foreground
         P_F = kde_fore_pdf / (kde_fore_pdf + kde_back_pdf)

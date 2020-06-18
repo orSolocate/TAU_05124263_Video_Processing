@@ -14,7 +14,7 @@ parser.add_argument('--algo', type=str, help='Background subtraction method (KNN
 args = parser.parse_args()
 
 
-def extract_fgMask_list(frame_list):
+def extract_fgMask_list(frame_list,background_after_median):
     ##############
     # frame = cv2.medianBlur(frame, 5)
     # frame = cv2.bilateralFilter(frame, 9, 75, 75)
@@ -67,6 +67,7 @@ def extract_fgMask_list(frame_list):
                                                        'dist2Threshold'],
                                                    detectShadows=config.createBackground_Substraction['detectShadows'])
     fgMask_list = []
+    i=0
     for frame in tqdm(frame_list):
         fgMask = backSub.apply(frame, learningRate=config.backSub_apply['learningRate'])
         # frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
@@ -202,10 +203,20 @@ def extract_fgMask_list(frame_list):
         frame[:, :, 1] = fgMask * frame[:, :, 1]
         frame[:, :, 2] = fgMask * frame[:, :, 2]
         # frame = fgMask * frame #for grayscale images
+        if (i==12):
+                a=1
+        diff=cv.absdiff(frame,background_after_median)
+        diff = np.mean(diff, axis=-1)
+        diff=np.asarray(diff,dtype=np.uint8)
+        fgMask[diff<config.mask_max_diff_from_median]=0
+        frame[:, :, 0] = fgMask * frame[:, :, 0]
+        frame[:, :, 1] = fgMask * frame[:, :, 1]
+        frame[:, :, 2] = fgMask * frame[:, :, 2]
+        i+=1
     return fgMask_list
 
 
-def reversed_process(frame_list):  # it didn't help - but this is the functoin...
+def reversed_process(frame_list):  # it didn't help - but this is the function...
     frame_list_rev = frame_list.copy()
     frame_list_rev.reverse()
     print("\nprocessing reversed frames..")
@@ -250,12 +261,12 @@ def Background_Substraction():
         #   first_frame = frame
 
     #median try - Or
-    median_video_improved.median_background(frame_list,config.medianSaved,config.median_background_img)
+    background_after_median=median_video_improved.median_background(frame_list,config.medianSaved,config.median_background_img)
 
 
     # frame_list_rev, fgMask_list_reversed=reversed_process(frame_list)
     print("\nprocessing forward frames..")
-    fgMask_list_forward = extract_fgMask_list(frame_list)
+    fgMask_list_forward = extract_fgMask_list(frame_list,background_after_median)
 
     # hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
     # hsv[:,:,1] = hsv[:,:,1]*fgMask
@@ -288,6 +299,7 @@ def Background_Substraction():
         # fgMask_list_reversed[i] = cv.bitwise_and(fgMask_list_reversed[i], fgMask_list_reversed[i], mask=mask)
         # fgMask = cv.add(fgMask_list_forward[i], fgMask_list_reversed[i])
         # fgMask=cv.bitwise_or(fgMask_list_forward[i],fgMask_list_reversed[i])
+        cv.putText(frame, "frame number : " + str(i), (100, 50), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2);
         out.write(frame)
         fgMask = np.uint8(255 * fgMask)
         fgMask = cv2.cvtColor(fgMask, cv2.COLOR_GRAY2RGB)

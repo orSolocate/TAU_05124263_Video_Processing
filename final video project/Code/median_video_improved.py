@@ -31,6 +31,7 @@ def median_background(frame_list, isSaved, out_str):
     background = np.dstack((output_picture_r, output_picture_g, output_picture_b))
     # gaussian_3 = cv2.GaussianBlur(background, (9,9), 10.0)
     # background = cv2.addWeighted(background, 1.5, gaussian_3, -0.5, 0, background)
+    background=np.asarray(background,dtype=np.uint8)
     if (isSaved):
         cv2.imwrite(out_str, background)
         cv2.destroyAllWindows()
