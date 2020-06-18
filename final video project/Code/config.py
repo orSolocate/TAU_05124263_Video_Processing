@@ -32,9 +32,31 @@ calcOpticalFlowPyrLK = dict(winSize=(50, 50),
                             maxLevel=10)
 
 # ~~~ Background_Substraction ~~~ #
+BS_frame_reduction_DEBUG=0
 createBackground_Substraction = dict(history=170,
                                      dist2Threshold=500.0,
                                      detectShadows=True)
 backSub_apply = dict(learningRate=-1)  #  negative means automatic learningRate
-erode = dict(iterations=2, struct_size=(15,10))  # thiner 1, (20,10)
-dilate = dict(iterations=5, struct_size=(4, 4))  # wider 5,  (5,5)
+BS_erode = dict(iterations=2, struct_size=(15, 10))  # thiner 1, (20,10)
+BS_dilate = dict(iterations=5, struct_size=(4, 4))  # wider 5,  (5,5)
+
+
+# ~~~ Matting ~~~ #
+MAT_frame_reduction_DEBUG=0
+
+forePlotted=False
+backPlotted=False
+plot_from_here=50
+plot_until_here=52
+
+tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'CSRT']
+tracker_type = tracker_types[2]
+bbox = (0, 200, 330, 815) # Define an initial bounding box
+epsilon = 0.00001
+bwperim=dict(n=4)
+MAT_dilate = dict(iterations=2, struct_size=(2, 2))  # wider 5,  (5,5)
+
+# ~~~ Median ~~~ #
+median_background_img=osp.join(cur_path, 'Temp','background_improved.jpg')
+median_filter_frames_num=205
+medianSaved=True

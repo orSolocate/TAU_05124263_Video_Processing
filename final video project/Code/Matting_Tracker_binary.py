@@ -12,8 +12,9 @@ from compute_distance_map import *
 import config
 from tqdm import tqdm
 import logging
-
-###############################################################################
+import GeodisTK
+import video_handling
+##############################################################################
 
 def bwperim(bw, n=4):
     """
@@ -110,39 +111,48 @@ def gaodesic_ditance(I,seeds_input):
 
 ###############################################################################
 
+def kde_evaluate(array,isPlotted,title=''):
+    x_grid = np.linspace(0, 255, 256)
+    if (array.size==0):
+        kde_pdf=np.zeros(256,dtype='float64')
+    else:
+        kde = gaussian_kde(array.ravel())  # , bw_method='silverman')
+        kde_pdf = kde.evaluate(x_grid)
+    if (isPlotted):
+        plt.figure()
+        plt.plot(x_grid, kde_pdf, color="g")
+        plt.title(title)
+        plt.legend()
+        plt.show(block=False)
+    return kde_pdf
+
+
+def geo_distance(frame, scrible_pos, isPlotted):
+    I = np.asanyarray(frame, np.float32)
+    S = np.zeros(I.shape, np.uint8)
+    S[scrible_pos == 100] = 1
+    D1 = GeodisTK.geodesic2d_fast_marching(I, S)
+    if (isPlotted):
+        cv.imshow('Fast Marching Geodesic distance',D1)
+    return D1
+
+
 def Matting():
 
     print("\nMatting:")
-    ## [capture]
     if (config.DEMO):
         capture_stab = cv.VideoCapture(config.demo_stabilized_vid_file)
+        n_frames_stab,fourcc, fps, out_size=video_handling.extract_video_params(capture_stab)
+        alpha_out = cv.VideoWriter(config.un_alpha_vid_file, fourcc, fps, out_size)
     else:
         capture_stab = cv.VideoCapture(config.stabilized_vid_file)
+        n_frames_stab,fourcc, fps, out_size=video_handling.extract_video_params(capture_stab)
+        alpha_out = cv.VideoWriter(config.alpha_vid_file, fourcc, fps, out_size)
+
     capture_bin = cv.VideoCapture(config.binary_vid_file)
+    n_frames_bin, fourcc_bin, fps_bin, out_size_bin = video_handling.extract_video_params(capture_bin)
 
-    if not capture_stab.isOpened:
-        print('Unable to open video')
-        exit(0)
-
-    if not capture_bin.isOpened:
-        print('Unable to open video')
-        exit(0)
-
-    # Get width and height of video stream
-    w = int(capture_stab.get(cv.CAP_PROP_FRAME_WIDTH))
-    h = int(capture_stab.get(cv.CAP_PROP_FRAME_HEIGHT))
-
-    # Get frames per second (fps)
-    fps = capture_stab.get(cv.CAP_PROP_FPS)
-
-    # Define the codec for output video
-    fourcc = cv.VideoWriter_fourcc(*'MJPG')
-
-    n_frames_stab = int(capture_stab.get(cv.CAP_PROP_FRAME_COUNT))
-    n_frames_bin = int(capture_bin.get(cv.CAP_PROP_FRAME_COUNT))
-
-    # Set up output video
-    out = cv.VideoWriter(config.matted_vid_file, fourcc, fps, (w, h))
+    out = cv.VideoWriter(config.matted_vid_file, fourcc, fps,out_size)
 
     # read background image
     background = cv.imread(config.in_background_file)
@@ -172,35 +182,31 @@ def Matting():
         # Set up tracker.
         # Instead of MIL, you can also use
 
-    tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'CSRT']
-    tracker_type = tracker_types[2]
 
-    if tracker_type == 'BOOSTING':
+    if config.tracker_type == 'BOOSTING':
         tracker = cv.TrackerBoosting_create()
-    if tracker_type == 'MIL':
+    if config.tracker_type == 'MIL':
         tracker = cv.TrackerMIL_create()
-    if tracker_type == 'KCF':
+    if config.tracker_type == 'KCF':
         tracker = cv.TrackerKCF_create()
-    if tracker_type == 'TLD':
+    if config.tracker_type == 'TLD':
         tracker = cv.TrackerTLD_create()
-    if tracker_type == 'MEDIANFLOW':
+    if config.tracker_type == 'MEDIANFLOW':
         tracker = cv.TrackerMedianFlow_create()
-    if tracker_type == 'GOTURN':
+    if config.tracker_type == 'GOTURN':
         tracker = cv.TrackerGOTURN_create()
-    if tracker_type == "CSRT":
+    if config.tracker_type == "CSRT":
         tracker = cv.TrackerCSRT_create()
 
-    # Define an initial bounding box
-    bbox = (0, 200, 330, 815)
 
     print("\nprocess frames..")
-    for iteration in tqdm(range(1,min(n_frames_stab,n_frames_bin)-197)): #why do you start from 1??
+    for iteration in tqdm(range(1,min(n_frames_stab,n_frames_bin)-config.MAT_frame_reduction_DEBUG)): #why do you start from 1??
     #iteration = 0
     #while True:
      #   iteration = iteration + 1
         ret, frame_stab = capture_stab.read()
         ret, frame_bin = capture_bin.read()
-        frame_stab_final = cv.cvtColor(frame_stab, cv.COLOR_BGR2HSV)  # 29=scrib, 255=garbage
+        frame_stab_hsv = cv.cvtColor(frame_stab, cv.COLOR_BGR2HSV)  # 29=scrib, 255=garbage
 
       #  if frame_stab is None:
        #     break
@@ -221,24 +227,24 @@ def Matting():
 
         ######tracker
         # Initialize tracker with first frame and bounding box
-        ok = tracker.init(frame_stab, bbox)
+        ok = tracker.init(frame_stab, config.bbox)
         # Update tracker
-        ok, bbox = tracker.update(frame_stab)
+        ok, config.bbox = tracker.update(frame_stab)
 
         # Calculate Frames per second (FPS)
         fps = cv.getTickFrequency() / (cv.getTickCount() - timer);
 
         # Display tracker type on frame
-        cv.putText(frame_stab, tracker_type + " Tracker", (100, 20), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2);
+        cv.putText(frame_stab, config.tracker_type + " Tracker", (100, 20), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2);
 
         # Display FPS on frame
         cv.putText(frame_stab, "FPS : " + str(int(fps)), (100, 50), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2);
 
 
-        frame_stab_tracked = frame_stab[int(bbox[1]):int((bbox[1] + bbox[3])),int(bbox[0]):int(1.3*(bbox[0] + bbox[2])),:]
-        frame_bin_tracked = frame_bin[int(bbox[1]):int((bbox[1] + bbox[3])),int(bbox[0]):int(1.3*(bbox[0] + bbox[2]))]
-        gray_back_scrib = gray_back_scrib[int(bbox[1]):int((bbox[1] + bbox[3])),int(bbox[0]):int(1.3*(bbox[0] + bbox[2]))]
-        gray_fore_scrib = gray_fore_scrib[int(bbox[1]):int((bbox[1] + bbox[3])),int(bbox[0]):int(1.3*(bbox[0] + bbox[2]))]
+        frame_stab_tracked = frame_stab[int(config.bbox[1]):int((config.bbox[1] + config.bbox[3])),int(config.bbox[0]):int(1.3*(config.bbox[0] + config.bbox[2])),:]
+        #frame_bin_tracked = frame_bin[int(config.bbox[1]):int((config.bbox[1] + config.bbox[3])),int(config.bbox[0]):int(1.3*(config.bbox[0] + config.bbox[2]))]
+        gray_back_scrib = gray_back_scrib[int(config.bbox[1]):int((config.bbox[1] + config.bbox[3])),int(config.bbox[0]):int(1.3*(config.bbox[0] + config.bbox[2]))]
+        gray_fore_scrib = gray_fore_scrib[int(config.bbox[1]):int((config.bbox[1] + config.bbox[3])),int(config.bbox[0]):int(1.3*(config.bbox[0] + config.bbox[2]))]
 
         #convert frame to hsv
         #frame_stab = cv.bilateralFilter(frame_stab, 18, 75, 75)
@@ -252,37 +258,20 @@ def Matting():
         #frame_stab = cv.medianBlur(frame_stab, 5)
 
         #takes only points from scribble
-        if iteration==1:
-            logging.debug("type of frame_stab:" ,type(frame_stab))
-            background_array = frame_stab_tracked[gray_back_scrib == 100]
-            foreground_array = frame_stab_tracked[gray_fore_scrib == 100]
+        #if iteration==1:
+        logging.debug("type of frame_stab:" ,type(frame_stab))
+        background_array = frame_stab_tracked[gray_back_scrib == 100]
+        foreground_array = frame_stab_tracked[gray_fore_scrib == 100]
 
         #binary maske normalized to [0,1]
         frame_bin = frame_bin/255
 
         #calculate KDE for background and foreground
-        x_grid = np.linspace(0, 255, 256)
-        kde_back = gaussian_kde(background_array.ravel())#, bw_method='silverman')
-        kde_back_pdf = kde_back.evaluate(x_grid)
-        kde_fore = gaussian_kde(foreground_array.ravel())#, bw_method='silverman')
-        kde_fore_pdf = kde_fore.evaluate(x_grid)
+        forePlotted=config.forePlotted
+        backPlotted=config.backPlotted
+        kde_fore_pdf=kde_evaluate(foreground_array,forePlotted,title='Kernel Density Estimation - Background')
+        kde_back_pdf=kde_evaluate(background_array,backPlotted,title='Kernel Density Estimation - Foreground')
 
-        #plot KDE  from all picture
-        plt.figure(1)
-        plt.plot(x_grid, kde_back_pdf, label='kde background', color="g")
-        plt.title('Kernel Density Estimation - Background')
-        plt.legend()
-        figManager = plt.get_current_fig_manager()
-        figManager.window.showMaximized()
-        plt.show(block=False)
-
-        plt.figure(2)
-        plt.plot(x_grid, kde_fore_pdf, label='kde foreground', color="g")
-        plt.title('Kernel Density Estimation - Foreground')
-        plt.legend()
-        figManager = plt.get_current_fig_manager()
-        figManager.window.showMaximized()
-        plt.show(block=False)
 
         #probabilties of background and foreground
         P_F = kde_fore_pdf / (kde_fore_pdf + kde_back_pdf)
@@ -312,13 +301,24 @@ def Matting():
         #Seeds_background = [(52, 60), (330, 36), (568, 62), (697, 156), (659, 356), (468, 336), (154, 360), (30, 316), (793, 316), (777, 38)]
         #gaodesic_fore = gaodesic_ditance(Probability_map_fore,Seeds_foreground);
         #gaodesic_back = gaodesic_ditance(Probability_map_back,Seeds_background);
-        gaodesic_fore = gaodesic_ditance(Probability_map_fore,gray_fore_scrib);
-        gaodesic_back = gaodesic_ditance(Probability_map_back,gray_back_scrib);
-        #print('done')
+
+        #yonatan's previous function
+        #gaodesic_fore = gaodesic_ditance(Probability_map_fore,gray_fore_scrib);
+        #gaodesic_back = gaodesic_ditance(Probability_map_back,gray_back_scrib);
+
+        #New Geodesic!!!#
+        gaodesic_fore=geo_distance(frame_stab_tracked, gray_fore_scrib, forePlotted)
+        gaodesic_back=geo_distance(frame_stab_tracked, gray_back_scrib, backPlotted)
+
+        if (config.plot_from_here<=iteration<=config.plot_until_here):
+            forePlotted=True
+            backPlotted=True
+        else:
+            forePlotted = config.forePlotted
+            backPlotted = config.backPlotted
 
         foreground_tracked = np.zeros((frame_stab_tracked.shape))
         foreground_tracked[gaodesic_fore-gaodesic_back<=0] = frame_stab_tracked[gaodesic_fore-gaodesic_back<=0]
-
 
         Vforeground = frame_stab_tracked
         Vforeground = (gaodesic_fore - gaodesic_back >= 0) * np.zeros(Vforeground.shape)
@@ -327,13 +327,13 @@ def Matting():
         #cv.imshow('Vforground',Vforeground)
 
         #check where is the outline of the foreground
-        delta_edges = bwperim(Vforeground, n=4) #binary image
+        delta_edges = bwperim(Vforeground, n=config.bwperim['n']) #binary image
         #cv.imshow('delta_edges',delta_edges)
 
 
         #do dialation with radius roo around the foreground edges
-        kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (2, 2))
-        B_ro = cv.dilate(delta_edges, kernel, iterations=2)  # wider binary image
+        kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, config.MAT_dilate['struct_size'])
+        B_ro = cv.dilate(delta_edges, kernel, iterations=config.MAT_dilate['iterations'])  # wider binary image
         B_ro = (B_ro==1) * 0.5
         #cv.imshow('B_ro',B_ro)
 
@@ -343,14 +343,14 @@ def Matting():
         trimap[B_ro == 0.5] =  0.5# undecided area
         #all background area is filled with zeros
 
-        cv.imshow('trimap',trimap)
+        #cv.imshow('trimap',trimap)
 
         #alpha mating
         r = 1 # 0<r<2   -can change to desired value
         r = r * np.ones((frame_stab_tracked.shape))
-        epsilon = 0.00001
-        gaodesic_fore[gaodesic_fore==0] = epsilon # dont divide by zero
-        gaodesic_back[gaodesic_back == 0] = epsilon
+
+        gaodesic_fore[gaodesic_fore==0] = config.epsilon # dont divide by zero
+        gaodesic_back[gaodesic_back == 0] = config.epsilon
         w_fore = cv.multiply(np.power(gaodesic_fore,-r),Probability_map_fore)
         w_back = cv.multiply(np.power(gaodesic_back,-r),Probability_map_back)
 
@@ -361,10 +361,10 @@ def Matting():
         #print(w_back.shape)
         #print(frame_stab.shape)
         #print(gaodesic_fore.shape)
-        #print(int(bbox[1]))
-        #print(int(bbox[1] + bbox[3]))
-        #print(int(bbox[0]))
-        #print(int(1.3 * (bbox[0] + bbox[2])))
+        #print(int(config.bbox[1]))
+        #print(int(config.bbox[1] + config.bbox[3]))
+        #print(int(config.bbox[0]))
+        #print(int(1.3 * (config.bbox[0] + config.bbox[2])))
         #test = w_fore / (w_fore+w_back)
         #print((test).shape)
         ####
@@ -380,16 +380,17 @@ def Matting():
         foreground_mask_tracked = np.zeros(foreground_tracked.shape)
         mask = foreground_tracked>0
         foreground_mask_tracked= mask * np.ones(mask.shape)
-        foreground = np.zeros(frame_stab_final.shape)
-        foreground[int(bbox[1]): int(bbox[1] + bbox[3]), int(bbox[0]): int(1.3 * (bbox[0] + bbox[2])),0] =  foreground_mask_tracked * frame_stab_final[int(bbox[1]): int(bbox[1] + bbox[3]), int(bbox[0]): int(1.3 * (bbox[0] + bbox[2])),0]
-        foreground[int(bbox[1]): int(bbox[1] + bbox[3]), int(bbox[0]): int(1.3 * (bbox[0] + bbox[2])),1] =  foreground_mask_tracked * frame_stab_final[int(bbox[1]): int(bbox[1] + bbox[3]), int(bbox[0]): int(1.3 * (bbox[0] + bbox[2])),1]
-        foreground[int(bbox[1]): int(bbox[1] + bbox[3]), int(bbox[0]): int(1.3 * (bbox[0] + bbox[2])),2] =  foreground_tracked
+        foreground = np.zeros(frame_stab_hsv.shape)
+        foreground[int(config.bbox[1]): int(config.bbox[1] + config.bbox[3]), int(config.bbox[0]): int(1.3 * (config.bbox[0] + config.bbox[2])),0] =  foreground_mask_tracked * frame_stab_hsv[int(config.bbox[1]): int(config.bbox[1] + config.bbox[3]), int(config.bbox[0]): int(1.3 * (config.bbox[0] + config.bbox[2])),0]
+        foreground[int(config.bbox[1]): int(config.bbox[1] + config.bbox[3]), int(config.bbox[0]): int(1.3 * (config.bbox[0] + config.bbox[2])),1] =  foreground_mask_tracked * frame_stab_hsv[int(config.bbox[1]): int(config.bbox[1] + config.bbox[3]), int(config.bbox[0]): int(1.3 * (config.bbox[0] + config.bbox[2])),1]
+        foreground[int(config.bbox[1]): int(config.bbox[1] + config.bbox[3]), int(config.bbox[0]): int(1.3 * (config.bbox[0] + config.bbox[2])),2] =  foreground_tracked
         background = background_hsv
 
         alpha_full = np.zeros((background_hsv.shape))
-        alpha_full[int(bbox[1]): int(bbox[1] + bbox[3]), int(bbox[0]): int(1.3 * (bbox[0] + bbox[2])),0] =  alpha
-        alpha_full[int(bbox[1]): int(bbox[1] + bbox[3]), int(bbox[0]): int(1.3 * (bbox[0] + bbox[2])),1] =  alpha
-        alpha_full[int(bbox[1]): int(bbox[1] + bbox[3]), int(bbox[0]): int(1.3 * (bbox[0] + bbox[2])),2] =  alpha
+        alpha_full[int(config.bbox[1]): int(config.bbox[1] + config.bbox[3]), int(config.bbox[0]): int(1.3 * (config.bbox[0] + config.bbox[2])),0] =  alpha
+        alpha_full[int(config.bbox[1]): int(config.bbox[1] + config.bbox[3]), int(config.bbox[0]): int(1.3 * (config.bbox[0] + config.bbox[2])),1] =  alpha
+        alpha_full[int(config.bbox[1]): int(config.bbox[1] + config.bbox[3]), int(config.bbox[0]): int(1.3 * (config.bbox[0] + config.bbox[2])),2] =  alpha
+        alpha_out.write(alpha_full)
 
         alpha_full=alpha_full.astype(float)
         foreground_mul_alpha = cv.multiply(alpha_full, foreground)
@@ -408,11 +409,12 @@ def Matting():
 
         # write output matted video
         out.write(outImage)
-        cv.imshow('Matted', outImage)
+        #cv.imshow('Matted', outImage)
 
     # Release video
     cv.destroyAllWindows()
     capture_stab.release()
     capture_bin.release()
     out.release()
+    alpha_out.release()
     return

@@ -27,7 +27,7 @@ def runme():
     Total_time += runtime_update("Background_Substraction runtime", start)
     # Matting step
     start = timeit.default_timer()
-    #Matting_Tracker_binary.Matting()
+    Matting_Tracker_binary.Matting()
     Total_time += runtime_update("Matting runtime", start)
     # Tracking step
     start = timeit.default_timer()

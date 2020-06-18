@@ -6,6 +6,8 @@ import argparse
 import config
 import logging
 from tqdm import tqdm
+import median_video_improved
+import video_handling
 
 parser = argparse.ArgumentParser(description='KNN parser')
 parser.add_argument('--algo', type=str, help='Background subtraction method (KNN, MOG2).', default='KNN')
@@ -102,10 +104,10 @@ def extract_fgMask_list(frame_list):
         # fgMask = cv2.erode(fgMask, kernel, iterations=1)  # thiner
 
         ####amazing results!!!!!!!!!!!!!!
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.erode['struct_size'])
-        fgMask = cv2.erode(fgMask, kernel, iterations=config.erode['iterations'])
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.dilate['struct_size'])
-        fgMask = cv2.dilate(fgMask, kernel, iterations=config.dilate['iterations'])
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.BS_erode['struct_size'])
+        fgMask = cv2.erode(fgMask, kernel, iterations=config.BS_erode['iterations'])
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.BS_dilate['struct_size'])
+        fgMask = cv2.dilate(fgMask, kernel, iterations=config.BS_dilate['iterations'])
         # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10,10))
         # fgMask = cv2.erode(fgMask, kernel, iterations=1)  # thinner
         #################################
@@ -224,36 +226,32 @@ def Background_Substraction():
     ## [capture]
     if (config.DEMO):
         capture = cv.VideoCapture(config.demo_stabilized_vid_file)
+        n_frames,fourcc, fps, out_size=video_handling.extract_video_params(capture)
     else:
         capture = cv.VideoCapture(config.stabilized_vid_file)
-    n_frames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-    if not capture.isOpened:
-        logging.error('Unable to open: ' + args.input)
-        return
-    # Get width and height of video stream
-    w = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-    h = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    # Get frames per second (fps)
-    fps = capture.get(cv2.CAP_PROP_FPS)
-    # Define the codec for output video
-    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+        n_frames,fourcc, fps, out_size=video_handling.extract_video_params(capture)
+
     # Set up output video
-    out = cv2.VideoWriter(config.extracted_vid_file, fourcc, fps, (w, h))
+    out = cv2.VideoWriter(config.extracted_vid_file, fourcc, fps, out_size)
     # Set up output video
-    out_bin = cv2.VideoWriter(config.binary_vid_file, fourcc, fps, (w, h))
+    out_bin = cv2.VideoWriter(config.binary_vid_file, fourcc, fps, out_size)
 
     background_from_median_filter = cv2.imread('background_from_median_filter.jpeg')
     # background = cv2.imread(config.in_background_file)
 
     print("\nextracting frames..")
     frame_list = []
-    for i in tqdm(range(n_frames)):
+    for i in tqdm(range(n_frames-config.BS_frame_reduction_DEBUG)):
         ret, frame = capture.read()
         if (ret == False):  # sanity check
             break
         frame_list.append(frame)
         # if iteration==0:
         #   first_frame = frame
+
+    #median try - Or
+    median_video_improved.median_background(frame_list,config.medianSaved,config.median_background_img)
+
 
     # frame_list_rev, fgMask_list_reversed=reversed_process(frame_list)
     print("\nprocessing forward frames..")
