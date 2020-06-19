@@ -35,20 +35,24 @@ calcOpticalFlowPyrLK = dict(winSize=(50, 50),
 # ~~~ Background_Substraction ~~~ #
 BS_frame_reduction_DEBUG=0
 createBackground_Substraction = dict(history=170,
-                                     dist2Threshold=400.0,
+                                     dist2Threshold=500.0,
                                      detectShadows=True)
 backSub_apply = dict(learningRate=-1)  #  negative means automatic learningRate
 BS_erode = dict(iterations=2, struct_size=(15, 10))  # thiner 1, (20,10)
 BS_dilate = dict(iterations=5, struct_size=(4, 4))  # wider 5,  (5,5)
-mask_max_diff_from_median=10
+mask_max_diff_from_median=25
+BS_first_frame_to_process=40
+BS_last_frame_to_process=205 #demo 205 frames stabilized 205 frames
+combMask_until_this_frame=0
 
 # ~~~ Median ~~~ #
 median_background_img=osp.join(cur_path, 'Temp','background_improved.jpg')
-median_filter_frames_num=250
+median_filter_frames_num=200
 medianSaved=True
 
 # ~~~ Matting ~~~ #
 MAT_frame_reduction_DEBUG=0
+
 
 forePlotted=False
 backPlotted=False
@@ -61,5 +65,5 @@ bbox = (0, 200, 330, 815) # Define an initial bounding box
 epsilon = 0.00001
 bwperim=dict(n=4)
 MAT_dilate = dict(iterations=2, struct_size=(2, 2))  # wider 5,  (5,5)
-
+r = 1 # 0<r<2   -can change to desired value
 

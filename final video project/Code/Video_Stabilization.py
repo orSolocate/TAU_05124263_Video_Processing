@@ -67,7 +67,7 @@ def Video_Stabilization():
     transforms = np.zeros((n_frames - 1, 3), np.float32)
 
     print("\nprocess frames..")
-    for i in tqdm(range(n_frames - 2)):
+    for i in tqdm(range(n_frames-1)):
         # Detect feature points in previous frame
         #prev_gray = cv2.bilateralFilter(prev_gray, 9, 250, 250)
         #prev_gray = cv2.Laplacian(prev_gray, cv2.CV_64F)
@@ -144,7 +144,7 @@ def Video_Stabilization():
 
     # Write n_frames-1 transformed frames
     print("\nWarrping image..")
-    for i in tqdm(range(n_frames - 2)):
+    for i in tqdm(range(n_frames-1)):
         # Read next frame
         success, frame = cap.read()
         if not success:
@@ -178,11 +178,13 @@ def Video_Stabilization():
         # If the image is too big, resize it.
         #  if(frame_out.shape[1] > 1920):
         #    frame_out = cv2.resize(frame_out, (int(frame_out.shape[1]/2)), (int(frame_out.shape[0]/2)));
+        cv2.putText(frame_out, "frame number : " + str(i), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
 
         # cv2.imshow("Before and After", frame_out)
         # cv2.waitKey(10)
         out.write(frame_out)
-
+        if (i==n_frames-2):
+            out.write(frame_out)
     # Release video
     cap.release()
     out.release()

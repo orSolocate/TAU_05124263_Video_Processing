@@ -14,7 +14,82 @@ parser.add_argument('--algo', type=str, help='Background subtraction method (KNN
 args = parser.parse_args()
 
 
-def extract_fgMask_list(frame_list,background_after_median):
+def morphological_filters(mask):
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.BS_erode['struct_size'])
+    fgMask = cv2.erode(mask, kernel, iterations=config.BS_erode['iterations'])
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.BS_dilate['struct_size'])
+    fgMask = cv2.dilate(fgMask, kernel, iterations=config.BS_dilate['iterations'])
+    return fgMask
+
+
+def blob_decetor(mask):
+    #############BLOB DETECTOR- black
+    # INVERT MASK
+    fgMask = cv2.bitwise_not(mask)
+
+    # # Setup SimpleBlobDetector parameters.
+    params = cv2.SimpleBlobDetector_Params()
+
+    # Change thresholds
+    params.minThreshold = 0  # 10
+    params.maxThreshold = 200  # 200
+
+    # Filter by Area.
+    params.filterByArea = True
+    params.minArea = 0.01  # 1500
+    # params.maxArea = 100
+
+    # Filter by Circularity
+    params.filterByCircularity = True
+    params.minCircularity = 0.1
+
+    # Filter by Convexity
+    params.filterByConvexity = True
+    params.minConvexity = 0.01  # 0.87
+
+    # Filter by Inertia
+    params.filterByInertia = True
+    params.minInertiaRatio = 0.01
+
+    # Create a detector with the parameters
+    ver = (cv2.__version__).split('.')
+    if int(ver[0]) < 3:
+        detector = cv2.SimpleBlobDetector(params)
+    else:
+        detector = cv2.SimpleBlobDetector_create(params)
+
+    # Detect blobs.
+    keypoints = detector.detect(fgMask)
+
+    # Draw detected blobs as red circles.
+    # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures
+    # the size of the circle corresponds to the size of blob
+
+    im_with_keypoints = cv2.drawKeypoints(fgMask, keypoints, np.array([]), (0, 0, 255),
+                                          cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    for keyPoint in keypoints:
+        x = int(keyPoint.pt[0])
+        y = int(keyPoint.pt[1])
+        s = keyPoint.size  # the diameter of the blob
+        # Center coordinates
+        center_coordinates = (x, y)
+        # Radius of circle
+        radius = int(s)
+        # white color in BGR
+        color = (255, 255, 255)
+
+        # Line thickness of 2 px
+        thickness = 1
+
+        # Using cv2.circle() method
+        # Draw a circle with blue line borders of thickness of 2 px
+        if (s <= 50):
+            fgMask = cv2.circle(fgMask, center_coordinates, radius, color, cv.FILLED)  # cv.FILLED
+
+    fgMask = cv2.bitwise_not(fgMask)  # invert image to original
+    return fgMask
+
+def extract_fgMask_list(frame_list):
     ##############
     # frame = cv2.medianBlur(frame, 5)
     # frame = cv2.bilateralFilter(frame, 9, 75, 75)
@@ -67,7 +142,6 @@ def extract_fgMask_list(frame_list,background_after_median):
                                                        'dist2Threshold'],
                                                    detectShadows=config.createBackground_Substraction['detectShadows'])
     fgMask_list = []
-    i=0
     for frame in tqdm(frame_list):
         fgMask = backSub.apply(frame, learningRate=config.backSub_apply['learningRate'])
         # frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
@@ -104,79 +178,8 @@ def extract_fgMask_list(frame_list,background_after_median):
         # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
         # fgMask = cv2.erode(fgMask, kernel, iterations=1)  # thiner
 
-        ####amazing results!!!!!!!!!!!!!!
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.BS_erode['struct_size'])
-        fgMask = cv2.erode(fgMask, kernel, iterations=config.BS_erode['iterations'])
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.BS_dilate['struct_size'])
-        fgMask = cv2.dilate(fgMask, kernel, iterations=config.BS_dilate['iterations'])
-        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10,10))
-        # fgMask = cv2.erode(fgMask, kernel, iterations=1)  # thinner
-        #################################
-
-        #############BLOB DETECTOR- black
-        # INVERT MASK
-        fgMask = cv2.bitwise_not(fgMask)
-
-        # # Setup SimpleBlobDetector parameters.
-        params = cv2.SimpleBlobDetector_Params()
-
-        # Change thresholds
-        params.minThreshold = 0  # 10
-        params.maxThreshold = 200  # 200
-
-        # Filter by Area.
-        params.filterByArea = True
-        params.minArea = 0.01  # 1500
-        # params.maxArea = 100
-
-        # Filter by Circularity
-        params.filterByCircularity = True
-        params.minCircularity = 0.1
-
-        # Filter by Convexity
-        params.filterByConvexity = True
-        params.minConvexity = 0.01  # 0.87
-
-        # Filter by Inertia
-        params.filterByInertia = True
-        params.minInertiaRatio = 0.01
-
-        # Create a detector with the parameters
-        ver = (cv2.__version__).split('.')
-        if int(ver[0]) < 3:
-            detector = cv2.SimpleBlobDetector(params)
-        else:
-            detector = cv2.SimpleBlobDetector_create(params)
-
-        # Detect blobs.
-        keypoints = detector.detect(fgMask)
-
-        # Draw detected blobs as red circles.
-        # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures
-        # the size of the circle corresponds to the size of blob
-
-        im_with_keypoints = cv2.drawKeypoints(fgMask, keypoints, np.array([]), (0, 0, 255),
-                                              cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-        for keyPoint in keypoints:
-            x = int(keyPoint.pt[0])
-            y = int(keyPoint.pt[1])
-            s = keyPoint.size  # the diameter of the blob
-            # Center coordinates
-            center_coordinates = (x, y)
-            # Radius of circle
-            radius = int(s)
-            # white color in BGR
-            color = (255, 255, 255)
-
-            # Line thickness of 2 px
-            thickness = 1
-
-            # Using cv2.circle() method
-            # Draw a circle with blue line borders of thickness of 2 px
-            if (s <= 50):
-                fgMask = cv2.circle(fgMask, center_coordinates, radius, color, cv.FILLED)  # cv.FILLED
-
-        fgMask = cv2.bitwise_not(fgMask)  # invert image to original
+        fgMask=morphological_filters(fgMask)
+        fgMask=blob_decetor(fgMask)
 
         # Show blobs
         # cv2.imshow("Keypoints", im_with_keypoints)
@@ -203,20 +206,46 @@ def extract_fgMask_list(frame_list,background_after_median):
         frame[:, :, 1] = fgMask * frame[:, :, 1]
         frame[:, :, 2] = fgMask * frame[:, :, 2]
         # frame = fgMask * frame #for grayscale images
-        if (i==12):
-                a=1
-        diff=cv.absdiff(frame,background_after_median)
-        diff = np.mean(diff, axis=-1)
-        diff=np.asarray(diff,dtype=np.uint8)
-        fgMask[diff<config.mask_max_diff_from_median]=0
-        frame[:, :, 0] = fgMask * frame[:, :, 0]
-        frame[:, :, 1] = fgMask * frame[:, :, 1]
-        frame[:, :, 2] = fgMask * frame[:, :, 2]
-        i+=1
     return fgMask_list
 
 
-def reversed_process(frame_list):  # it didn't help - but this is the function...
+def extract_combMask_list(frame_list):
+    comb_mask_list = []
+    for frame in tqdm(frame_list):
+        shorts_lower_red = np.array([0, 0, 0])
+        shorts_upper_red = np.array([50, 50, 50])
+        skin_lower_red = np.array([75, 85, 140])
+        skin_upper_red = np.array([110, 120, 180])
+        shirt_lower_red = np.array([0, 0, 40])
+        shirt_upper_red = np.array([80, 80, 100])
+
+        shorts_mask = cv2.inRange(frame, shorts_lower_red, shorts_upper_red)
+        skin_mask = cv2.inRange(frame, skin_lower_red, skin_upper_red)
+        shirt_mask = cv2.inRange(frame, shirt_lower_red, shirt_upper_red)
+
+        shirt_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 10))  # 15,10
+        shirt_mask_morph = cv2.erode(shirt_mask, shirt_kernel, iterations=2)  # thiner 1
+        shirt_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # 5,5
+        shirt_mask_morph = cv2.dilate(shirt_mask_morph, shirt_kernel, iterations=5)  # wider 5
+
+        skin_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # 15,10
+        skin_mask_morph = cv2.erode(skin_mask, skin_kernel, iterations=2)  # thiner 1
+        skin_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # 5,5
+        skin_mask_morph = cv2.dilate(skin_mask_morph, skin_kernel, iterations=5)  # wider 5
+
+        shorts_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 5))  # 15,10
+        shorts_mask_morph = cv2.erode(shorts_mask, shorts_kernel, iterations=2)  # thiner 1
+        shorts_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # 5,5
+        shorts_mask_morph = cv2.dilate(shorts_mask_morph, shorts_kernel, iterations=5)  # wider 5
+
+        comb_mask = cv.bitwise_or(shirt_mask_morph, skin_mask_morph)
+        comb_mask = cv.bitwise_or(comb_mask, shorts_mask_morph)
+        comb_mask[:,int(frame.shape[1]/2):]=0
+        comb_mask_list.append(comb_mask)
+    return comb_mask_list
+
+
+def reversed_process(frame_list):  # it didn't help - but this is the functoin...
     frame_list_rev = frame_list.copy()
     frame_list_rev.reverse()
     print("\nprocessing reversed frames..")
@@ -237,11 +266,9 @@ def Background_Substraction():
     ## [capture]
     if (config.DEMO):
         capture = cv.VideoCapture(config.demo_stabilized_vid_file)
-        n_frames,fourcc, fps, out_size=video_handling.extract_video_params(capture)
     else:
         capture = cv.VideoCapture(config.stabilized_vid_file)
-        n_frames,fourcc, fps, out_size=video_handling.extract_video_params(capture)
-
+    n_frames, fourcc, fps, out_size = video_handling.extract_video_params(capture)
     # Set up output video
     out = cv2.VideoWriter(config.extracted_vid_file, fourcc, fps, out_size)
     # Set up output video
@@ -266,7 +293,7 @@ def Background_Substraction():
 
     # frame_list_rev, fgMask_list_reversed=reversed_process(frame_list)
     print("\nprocessing forward frames..")
-    fgMask_list_forward = extract_fgMask_list(frame_list,background_after_median)
+    fgMask_list_forward = extract_fgMask_list(frame_list)
 
     # hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
     # hsv[:,:,1] = hsv[:,:,1]*fgMask
@@ -284,12 +311,10 @@ def Background_Substraction():
     #    break
 
     # [write frame to .avi]
-    print("\nwrite extracted.avi and binary.avi")
+    print("\nwriting 'extracted.avi' and 'binary.avi'")
     img2gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     ret, mask = cv.threshold(img2gray, 10, 255, cv.THRESH_BINARY)
     for i in tqdm(range(len(frame_list))):
-        # if (iteration >= 6):
-        frame = frame_list[i]
         frame = frame_list[i]
         # frame_list[i]=cv.bitwise_and(frame_list[i],frame_list[i],mask=mask)
         # frame_list_rev[i]=cv.bitwise_and(frame_list_rev[i],frame_list_rev[i],mask=mask)
@@ -299,7 +324,7 @@ def Background_Substraction():
         # fgMask_list_reversed[i] = cv.bitwise_and(fgMask_list_reversed[i], fgMask_list_reversed[i], mask=mask)
         # fgMask = cv.add(fgMask_list_forward[i], fgMask_list_reversed[i])
         # fgMask=cv.bitwise_or(fgMask_list_forward[i],fgMask_list_reversed[i])
-        cv.putText(frame, "frame number : " + str(i), (100, 50), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2);
+        cv.putText(frame, "frame number : " + str(i), (100, 50), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
         out.write(frame)
         fgMask = np.uint8(255 * fgMask)
         fgMask = cv2.cvtColor(fgMask, cv2.COLOR_GRAY2RGB)

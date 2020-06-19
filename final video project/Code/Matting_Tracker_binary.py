@@ -159,7 +159,7 @@ def Matting():
     # read background image
     background = cv.imread(config.in_background_file)
     background_hsv = cv.cvtColor(background, cv.COLOR_BGR2HSV)
-    background_v = background_hsv[:,:,2]
+    #background_v = background_hsv[:,:,2]
 
     #read background scribbles
     #background_scrib = cv.imread('Background_full_scrib.jpg')
@@ -239,10 +239,10 @@ def Matting():
         fps = cv.getTickFrequency() / (cv.getTickCount() - timer);
 
         # Display tracker type on frame
-        cv.putText(frame_stab, config.tracker_type + " Tracker", (100, 20), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2);
+        cv.putText(frame_stab, config.tracker_type + " Tracker", (100, 20), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
 
         # Display FPS on frame
-        cv.putText(frame_stab, "FPS : " + str(int(fps)), (100, 50), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2);
+        cv.putText(frame_stab, "FPS : " + str(int(fps)), (100, 50), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
 
 
         frame_stab_tracked = frame_stab[int(config.bbox[1]):int((config.bbox[1] + config.bbox[3])),int(config.bbox[0]):int(1.3*(config.bbox[0] + config.bbox[2])),:]
@@ -347,9 +347,7 @@ def Matting():
         #cv.imshow('trimap',trimap)
 
         #alpha mating
-        r = 1 # 0<r<2   -can change to desired value
-        r = r * np.ones((frame_stab_tracked.shape))
-
+        r = config.r * np.ones((frame_stab_tracked.shape))
         gaodesic_fore[gaodesic_fore==0] = config.epsilon # dont divide by zero
         gaodesic_back[gaodesic_back == 0] = config.epsilon
         w_fore = cv.multiply(np.power(gaodesic_fore,-r),Probability_map_fore)
@@ -391,7 +389,9 @@ def Matting():
         alpha_full[int(config.bbox[1]): int(config.bbox[1] + config.bbox[3]), int(config.bbox[0]): int(1.3 * (config.bbox[0] + config.bbox[2])),0] =  alpha
         alpha_full[int(config.bbox[1]): int(config.bbox[1] + config.bbox[3]), int(config.bbox[0]): int(1.3 * (config.bbox[0] + config.bbox[2])),1] =  alpha
         alpha_full[int(config.bbox[1]): int(config.bbox[1] + config.bbox[3]), int(config.bbox[0]): int(1.3 * (config.bbox[0] + config.bbox[2])),2] =  alpha
-        alpha_out.write(alpha_full)
+
+        alpha_full_out = np.uint8(alpha_full * 255)
+        alpha_out.write(alpha_full_out)
 
         alpha_full=alpha_full.astype(float)
         foreground_mul_alpha = cv.multiply(alpha_full, foreground)
