@@ -178,7 +178,7 @@ def Video_Stabilization():
         # If the image is too big, resize it.
         #  if(frame_out.shape[1] > 1920):
         #    frame_out = cv2.resize(frame_out, (int(frame_out.shape[1]/2)), (int(frame_out.shape[0]/2)));
-        cv2.putText(frame_out, "frame number : " + str(i), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
+        # cv2.putText(frame_out, "frame number : " + str(i), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
 
         # cv2.imshow("Before and After", frame_out)
         # cv2.waitKey(10)

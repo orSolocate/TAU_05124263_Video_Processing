@@ -1,15 +1,13 @@
 import cv2
-import sys
+import config
+import video_handling
+import logging
+from tqdm import tqdm
 
 (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
 
-if __name__ == '__main__':
-
-    # Set up tracker.
-    # Instead of MIL, you can also use
-
-    tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'CSRT']
-    tracker_type = tracker_types[2]
+def Tracking():
+    tracker_type = config.tracker_type
 
     if int(minor_ver) < 3:
         tracker = cv2.Tracker_create(tracker_type)
@@ -30,35 +28,22 @@ if __name__ == '__main__':
             tracker = cv2.TrackerCSRT_create()
 
     # Read video
-    video = cv2.VideoCapture("Stabilized_Example_INPUT.avi")
+    video = cv2.VideoCapture(config.matted_vid_file)
+    #video = cv2.VideoCapture(config.stabilized_vid_file) #for debug
+    n_frames,fourcc, fps, out_size=video_handling.extract_video_params(video)
 
-    # Exit if video not opened.
-    if not video.isOpened():
-        print
-        "Could not open video"
-        sys.exit()
-
-    # Read first frame.
-    ok, frame = video.read()
-    if not ok:
-        print
-        'Cannot read video file'
-        sys.exit()
-
-    # Define an initial bounding box
-    bbox = (287, 23, 86, 320)
-
+    out = cv2.VideoWriter(config.out_vid_file, fourcc, fps, out_size)
     # Uncomment the line below to select a different bounding box
-    bbox = cv2.selectROI(frame, False)
+    #bbox = cv2.selectROI(frame, False)
 
-    # Initialize tracker with first frame and bounding box
-    ok = tracker.init(frame, bbox)
-
-    while True:
+    for i in tqdm(range(n_frames)): #-1 because we already read the first frame
         # Read a new frame
         ok, frame = video.read()
-        if not ok:
-            break
+        if (i==1):
+            if not ok:
+                logging.error('Unable to read video file')
+                exit(0)
+            ok = tracker.init(frame, config.bbox)
 
         # Start timer
         timer = cv2.getTickCount()
@@ -79,15 +64,14 @@ if __name__ == '__main__':
             # Tracking failure
             cv2.putText(frame, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
 
-        # Display tracker type on frame
+        # Display on frame
         cv2.putText(frame, tracker_type + " Tracker", (100, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2);
-
-        # Display FPS on frame
+        cv2.putText(frame, "frame number : " + str(i), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
         cv2.putText(frame, "FPS : " + str(int(fps)), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2);
 
-        # Display result
-        cv2.imshow("Tracking", frame)
-
-        # Exit if ESC pressed
-        k = cv2.waitKey(1) & 0xff
-        if k == 27: break
+        # Display result -debug
+        #cv2.imshow("Tracking", frame)
+        # k = cv2.waitKey(1) & 0xff# Exit if ESC pressed
+        # if k == 27: break
+        out.write(frame)
+    return

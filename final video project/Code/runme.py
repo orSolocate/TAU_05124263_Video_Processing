@@ -1,4 +1,4 @@
-import config, Video_Stabilization, Background_Substraction, Matting_Tracker_binary
+import config, Video_Stabilization, Background_Substraction, Matting_Tracker_binary,Tracking
 import timeit
 import logging
 import os
@@ -23,7 +23,7 @@ def runme():
     Total_time += runtime_update("Video_Stabilization runtime", start)
     # Background_Substraction step
     start = timeit.default_timer()
-    Background_Substraction.Background_Substraction()
+    #Background_Substraction.Background_Substraction()
     Total_time += runtime_update("Background_Substraction runtime", start)
     # Matting step
     start = timeit.default_timer()
@@ -31,7 +31,7 @@ def runme():
     Total_time += runtime_update("Matting runtime", start)
     # Tracking step
     start = timeit.default_timer()
-    # Tracking.Tracking()
+    Tracking.Tracking()
     Total_time += runtime_update("Tracking runtime", start)
     # close all
     logging.info("Total Execution runtime=  %f seconds", Total_time)
