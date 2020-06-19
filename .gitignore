@@ -1,9 +1,9 @@
 *.docx
 *.doc
 *.idea
-*.avi
 *.pyc
 *.png
 *.png
+*.avi
 vp2020*.zip
 __pycache__/*

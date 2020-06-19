@@ -1,6 +1,12 @@
-INFO:root:Initalizing runtime=   0.000101 seconds
-INFO:root:Video_Stabilization runtime=   28.171110 seconds
-INFO:root:Background_Substraction runtime=   113.043722 seconds
-INFO:root:Matting runtime=   91.129380 seconds
-INFO:root:Tracking runtime=   0.000002 seconds
-INFO:root:Total Execution runtime=  232.344314 seconds
+INFO:root:Initalizing runtime=   0.000083 seconds
+INFO:root:Video_Stabilization runtime=   29.493540 seconds
+INFO:root:Background_Substraction runtime=   130.676941 seconds
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:root:Matting runtime=   2454.297035 seconds
+INFO:root:Tracking runtime=   0.000001 seconds
+INFO:root:Total Execution runtime=  2614.467599 seconds
