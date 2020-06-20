@@ -89,7 +89,7 @@ def blob_decetor(mask):
     fgMask = cv2.bitwise_not(fgMask)  # invert image to original
     return fgMask
 
-def extract_fgMask_list(frame_list):
+def extract_fgMask_list(frame_list,background_after_median):
     ##############
     # frame = cv2.medianBlur(frame, 5)
     # frame = cv2.bilateralFilter(frame, 9, 75, 75)
@@ -142,6 +142,7 @@ def extract_fgMask_list(frame_list):
                                                        'dist2Threshold'],
                                                    detectShadows=config.createBackground_Substraction['detectShadows'])
     fgMask_list = []
+    i=0
     for frame in tqdm(frame_list):
         fgMask = backSub.apply(frame, learningRate=config.backSub_apply['learningRate'])
         # frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
@@ -178,8 +179,8 @@ def extract_fgMask_list(frame_list):
         # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
         # fgMask = cv2.erode(fgMask, kernel, iterations=1)  # thiner
 
-        fgMask=morphological_filters(fgMask)
-        fgMask=blob_decetor(fgMask)
+        # fgMask=morphological_filters(fgMask)
+        # fgMask=blob_decetor(fgMask)
 
         # Show blobs
         # cv2.imshow("Keypoints", im_with_keypoints)
@@ -198,14 +199,37 @@ def extract_fgMask_list(frame_list):
         # fgMask = cv2.dilate(fgMask, kernel, iterations=4)  # wider
 
         # fgMask = cv2.medianBlur(fgMask, 21)
-        fgMask = fgMask / 255
-        fgMask_list.append(fgMask)
+        fgMask = np.uint8(fgMask / 255)
 
         # FRAME MANIPULATION!#
+        if (i==12):
+            a=1
         frame[:, :, 0] = fgMask * frame[:, :, 0]
         frame[:, :, 1] = fgMask * frame[:, :, 1]
         frame[:, :, 2] = fgMask * frame[:, :, 2]
-        # frame = fgMask * frame #for grayscale images
+        diff = cv.absdiff(frame, background_after_median)
+        diff = np.mean(diff, axis=-1)
+        #try to use H channel in HSV space. same results..
+        # background_hsv=cv2.cvtColor(background_after_median,cv2.COLOR_BGR2HSV)
+        # frame_hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
+        # diff=cv2.subtract(background_hsv[:,:,0],frame_hsv[:,:,0])
+        diff = np.asarray(diff, dtype=np.uint8)
+        fgMask[diff <= config.mask_max_diff_from_median] = 0
+        #         # difference = cv2.subtract(frame, background_after_median)
+        #         # difference_grayscale = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)
+        #         # ret, mask = cv2.threshold(difference_grayscale, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
+        #         # fgMask[mask != 255] = 0
+        fgMask = fgMask * 255
+        fgMask = morphological_filters(fgMask)
+        fgMask = blob_decetor(fgMask)
+        fgMask = fgMask / 255
+
+        frame[:, :, 0] = fgMask * frame[:, :, 0]
+        frame[:, :, 1] = fgMask * frame[:, :, 1]
+        frame[:, :, 2] = fgMask * frame[:, :, 2]
+
+        fgMask_list.append(fgMask)
+        i+=1
     return fgMask_list
 
 
@@ -290,10 +314,10 @@ def Background_Substraction():
     #median try - Or
     background_after_median=median_video_improved.median_background(frame_list,config.medianSaved,config.median_background_img)
 
-
+    #seq_filter=median_video_improved.sequental_filter(frame_list)
     # frame_list_rev, fgMask_list_reversed=reversed_process(frame_list)
     print("\nprocessing forward frames..")
-    fgMask_list_forward = extract_fgMask_list(frame_list)
+    fgMask_list_forward = extract_fgMask_list(frame_list,background_after_median)
 
     # hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
     # hsv[:,:,1] = hsv[:,:,1]*fgMask
