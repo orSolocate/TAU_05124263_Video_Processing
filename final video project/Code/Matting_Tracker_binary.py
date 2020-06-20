@@ -219,11 +219,11 @@ def Matting():
         ###scribels from binary map
 
         gray_fore_scrib = cv.cvtColor(frame_bin, cv.COLOR_BGR2GRAY)  # 29=scrib, 255=garbage
-        gray_fore_scrib[gray_fore_scrib==255]=100#!=255
-        gray_fore_scrib[gray_fore_scrib==0]=0#==255
+        gray_fore_scrib[gray_fore_scrib>=200]=100#!=255
+        gray_fore_scrib[gray_fore_scrib<=99]=0#==255
         gray_back_scrib = cv.bitwise_not(cv.cvtColor(frame_bin, cv.COLOR_BGR2GRAY))
-        gray_back_scrib[gray_back_scrib==0]=0
-        gray_back_scrib[gray_back_scrib==255]=100
+        gray_back_scrib[gray_back_scrib<=99]=0
+        gray_back_scrib[gray_back_scrib>=200]=100
 
         # plot background and foreground scribbels
         #cv.imshow("test1",gray_back_scrib)
