@@ -1,5 +1,4 @@
 from __future__ import print_function
-import cv2 as cv
 import cv2
 import numpy as np
 import argparse
@@ -31,25 +30,25 @@ def blob_decetor(mask):
     params = cv2.SimpleBlobDetector_Params()
 
     # Change thresholds
-    params.minThreshold = 0  # 10
-    params.maxThreshold = 200  # 200
+    params.minThreshold = config.blob_detect['minThreshold']
+    params.maxThreshold = config.blob_detect['maxThreshold']
 
     # Filter by Area.
-    params.filterByArea = True
-    params.minArea = 0.01  # 1500
+    params.filterByArea = config.blob_detect['filterByArea']
+    params.minArea = config.blob_detect['minArea']
     # params.maxArea = 100
 
     # Filter by Circularity
-    params.filterByCircularity = True
-    params.minCircularity = 0.1
+    params.filterByCircularity = config.blob_detect['filterByCircularity']
+    params.minCircularity = config.blob_detect['minCircularity']
 
     # Filter by Convexity
-    params.filterByConvexity = True
-    params.minConvexity = 0.01  # 0.87
+    params.filterByConvexity = config.blob_detect['filterByConvexity']
+    params.minConvexity = config.blob_detect['minConvexity']
 
     # Filter by Inertia
-    params.filterByInertia = True
-    params.minInertiaRatio = 0.01
+    params.filterByInertia = config.blob_detect['filterByInertia']
+    params.minInertiaRatio =config.blob_detect['minInertiaRatio']
 
     # Create a detector with the parameters
     ver = (cv2.__version__).split('.')
@@ -84,7 +83,7 @@ def blob_decetor(mask):
         # Using cv2.circle() method
         # Draw a circle with blue line borders of thickness of 2 px
         if (s <= 50):
-            fgMask = cv2.circle(fgMask, center_coordinates, radius, color, cv.FILLED)  # cv.FILLED
+            fgMask = cv2.circle(fgMask, center_coordinates, radius, color, cv2.FILLED)  # cv2.FILLED
 
     fgMask = cv2.bitwise_not(fgMask)  # invert image to original
     return fgMask
@@ -137,7 +136,7 @@ def extract_fgMask_list(frame_list,background__median,background50_50):
     if args.algo == 'MOG2':
         backSub = cv.createBackgroundSubtractorMOG2()
     else:
-        backSub = cv.createBackgroundSubtractorKNN(history=config.createBackground_Substraction['history'],
+        backSub = cv2.createBackgroundSubtractorKNN(history=config.createBackground_Substraction['history'],
                                                    dist2Threshold=config.createBackground_Substraction[
                                                        'dist2Threshold'],
                                                    detectShadows=config.createBackground_Substraction['detectShadows'])
@@ -151,9 +150,9 @@ def extract_fgMask_list(frame_list,background__median,background50_50):
 
         ## [display_frame_number]
         # get the frame number and write it on the current frame
-        # cv.rectangle(frame, (10, 2), (100,20), (255,255,255), -1)
-        # cv.putText(frame, str(capture.get(cv.CAP_PROP_POS_FRAMES)), (15, 15),
-        #           cv.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
+        # cv2.rectangle(frame, (10, 2), (100,20), (255,255,255), -1)
+        # cv2.putText(frame, str(capture.get(cv2.CAP_PROP_POS_FRAMES)), (15, 15),
+        #           cv2.FONT_HERSHEY_SIMPLEX, 0.5 , (0,0,0))
         ## [display_frame_number]
 
         # yonatan's add
@@ -209,7 +208,7 @@ def extract_fgMask_list(frame_list,background__median,background50_50):
         frame[:, :, 0] = fgMask * frame[:, :, 0]
         frame[:, :, 1] = fgMask * frame[:, :, 1]
         frame[:, :, 2] = fgMask * frame[:, :, 2]
-        diff = cv.absdiff(frame, background__median)
+        diff = cv2.absdiff(frame, background__median)
         a = (diff[:, :, 0] <= config.mask_max_diff_from_median)
         b = (diff[:, :, 1] <= config.mask_max_diff_from_median)
         c = (diff[:, :, 2] <= config.mask_max_diff_from_median)
@@ -226,7 +225,7 @@ def extract_fgMask_list(frame_list,background__median,background50_50):
         #diff = np.asarray(diff, dtype=np.uint8)
 
        #diff50=cv2.subtract(background50_hsv[:,:,0],frame_hsv[:,:,0])
-        diff = cv.absdiff(frame, background50_50)
+        diff = cv2.absdiff(frame, background50_50)
         a = (diff[:, :, 0] <= config.mask_max_diff_from_median)
         b = (diff[:, :, 1] <= config.mask_max_diff_from_median)
         c = (diff[:, :, 2] <= config.mask_max_diff_from_median)
@@ -307,8 +306,8 @@ def extract_combMask_list(frame_list):
         shorts_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # 5,5
         shorts_mask_morph = cv2.dilate(shorts_mask_morph, shorts_kernel, iterations=5)  # wider 5
 
-        comb_mask = cv.bitwise_or(shirt_mask_morph, skin_mask_morph)
-        comb_mask = cv.bitwise_or(comb_mask, shorts_mask_morph)
+        comb_mask = cv2.bitwise_or(shirt_mask_morph, skin_mask_morph)
+        comb_mask = cv2.bitwise_or(comb_mask, shorts_mask_morph)
         comb_mask[:,int(frame.shape[1]/2):]=0
         comb_mask_list.append(comb_mask)
     return comb_mask_list
@@ -329,14 +328,14 @@ def Background_Substraction():
     print("\nBackground_Substraction:")
 
     ## [create]
-    # cv.BackgroundSubtractorKNN.setkNNSamples(backSub,50) #How many nearest neighbours need to match.
-    # cv.BackgroundSubtractorKNN.setNSamples(backSub,1) #Sets the number of data samples in the background model.
+    # cv2.BackgroundSubtractorKNN.setkNNSamples(backSub,50) #How many nearest neighbours need to match.
+    # cv2.BackgroundSubtractorKNN.setNSamples(backSub,1) #Sets the number of data samples in the background model.
 
     ## [capture]
     if (config.DEMO):
-        capture = cv.VideoCapture(config.demo_stabilized_vid_file)
+        capture = cv2.VideoCapture(config.demo_stabilized_vid_file)
     else:
-        capture = cv.VideoCapture(config.stabilized_vid_file)
+        capture = cv2.VideoCapture(config.stabilized_vid_file)
     n_frames, fourcc, fps, out_size = video_handling.extract_video_params(capture)
     # Set up output video
     out = cv2.VideoWriter(config.extracted_vid_file, fourcc, fps, out_size)
@@ -372,28 +371,28 @@ def Background_Substraction():
     ## [show - DEBUG]
     # show the current frame and the fg masks
 
-    # cv.imshow('Frame', frame)
-    # cv.imshow('FG Mask', fgMask)
+    # cv2.imshow('Frame', frame)
+    # cv2.imshow('FG Mask', fgMask)
     # wait a few seconds
-    # keyboard = cv.waitKey(1)
+    # keyboard = cv2.waitKey(1)
     # if keyboard == 'q' or keyboard == 27:
     #    break
 
     # [write frame to .avi]
     print("\nwriting 'extracted.avi' and 'binary.avi'")
-    img2gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    ret, mask = cv.threshold(img2gray, 10, 255, cv.THRESH_BINARY)
+    img2gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    ret, mask = cv2.threshold(img2gray, 10, 255, cv2.THRESH_BINARY)
     for i in tqdm(range(len(frame_list))):
         frame = frame_list[i]
-        # frame_list[i]=cv.bitwise_and(frame_list[i],frame_list[i],mask=mask)
-        # frame_list_rev[i]=cv.bitwise_and(frame_list_rev[i],frame_list_rev[i],mask=mask)
-        # frame=cv.add(frame_list[i],frame_list_rev[i])
+        # frame_list[i]=cv2.bitwise_and(frame_list[i],frame_list[i],mask=mask)
+        # frame_list_rev[i]=cv2.bitwise_and(frame_list_rev[i],frame_list_rev[i],mask=mask)
+        # frame=cv2.add(frame_list[i],frame_list_rev[i])
         fgMask = fgMask_list_forward[i]
-        # fgMask_list_forward[i] = cv.bitwise_and(fgMask_list_forward[i], fgMask_list_forward[i], mask=mask)
-        # fgMask_list_reversed[i] = cv.bitwise_and(fgMask_list_reversed[i], fgMask_list_reversed[i], mask=mask)
-        # fgMask = cv.add(fgMask_list_forward[i], fgMask_list_reversed[i])
-        # fgMask=cv.bitwise_or(fgMask_list_forward[i],fgMask_list_reversed[i])
-        cv.putText(frame, "frame number : " + str(i), (100, 50), cv.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
+        # fgMask_list_forward[i] = cv2.bitwise_and(fgMask_list_forward[i], fgMask_list_forward[i], mask=mask)
+        # fgMask_list_reversed[i] = cv2.bitwise_and(fgMask_list_reversed[i], fgMask_list_reversed[i], mask=mask)
+        # fgMask = cv2.add(fgMask_list_forward[i], fgMask_list_reversed[i])
+        # fgMask=cv2.bitwise_or(fgMask_list_forward[i],fgMask_list_reversed[i])
+        cv2.putText(frame, "frame number : " + str(i), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
         out.write(frame)
         fgMask = np.uint8(255 * fgMask)
         fgMask = cv2.cvtColor(fgMask, cv2.COLOR_GRAY2RGB)
