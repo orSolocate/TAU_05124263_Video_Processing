@@ -92,21 +92,21 @@ def extract_fgMask_list(frame_list,background__median,background50_50):
     ##############
     # frame = cv2.medianBlur(frame, 5)
     # frame = cv2.bilateralFilter(frame, 9, 75, 75)
-    # cv.imshow('real Frame 1', frame)
+    # cv2.imshow('real Frame 1', frame)
     # frame = 255 - cv2.absdiff(frame,background_from_median_filter)
-    # cv.imshow('real Frame 2', frame)
+    # cv2.imshow('real Frame 2', frame)
     # kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
-    # frame = cv.filter2D(frame, -1, kernel)
+    # frame = cv2.filter2D(frame, -1, kernel)
     # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
     # frame = cv2.dilate(frame, kernel, iterations=2)  # wider
 
     # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
-    # frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    # frame[:, :, 0] = cv.equalizeHist(frame[:, :, 0])
-    # frame[:, :, 1] = cv.equalizeHist(frame[:, :, 1])
-    # frame[:, :, 2] = cv.equalizeHist(frame[:, :, 2])
+    # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # frame[:, :, 0] = cv2.equalizeHist(frame[:, :, 0])
+    # frame[:, :, 1] = cv2.equalizeHist(frame[:, :, 1])
+    # frame[:, :, 2] = cv2.equalizeHist(frame[:, :, 2])
     # frame = cv2.cvtColor(frame, cv2.COLOR_HSV2RGB)
-    # cv.imshow('equalizeHist', frame)
+    # cv2.imshow('equalizeHist', frame)
 
     # convert image from RGB to HSV
     # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
@@ -134,7 +134,7 @@ def extract_fgMask_list(frame_list,background__median,background50_50):
 
     # create Background Subtractor objects
     if args.algo == 'MOG2':
-        backSub = cv.createBackgroundSubtractorMOG2()
+        backSub = cv2.createBackgroundSubtractorMOG2()
     else:
         backSub = cv2.createBackgroundSubtractorKNN(history=config.createBackground_Substraction['history'],
                                                    dist2Threshold=config.createBackground_Substraction[
@@ -142,6 +142,8 @@ def extract_fgMask_list(frame_list,background__median,background50_50):
                                                    detectShadows=config.createBackground_Substraction['detectShadows'])
     fgMask_list = []
     i=0
+    #explanation for number 102 - this is the number until which the comb fitler is efficient
+    combMask_list = extract_combMask_list(frame_list[:102])
     for frame in tqdm(frame_list):
         fgMask = backSub.apply(frame, learningRate=config.backSub_apply['learningRate'])
         # frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
@@ -267,6 +269,13 @@ def extract_fgMask_list(frame_list,background__median,background50_50):
         fgMask = fgMask * 255
         fgMask = morphological_filters(fgMask)
         fgMask = blob_decetor(fgMask)
+
+        #comb filter addition first selected frames
+        if (i<config.combMask_until_this_frame):
+            fgMask=combMask_list[i]
+        elif (i<len(combMask_list)):
+            fgMask[combMask_list[i]==255]=255
+        #last manipulation
         fgMask = fgMask / 255
         frame[:, :, 0] = fgMask * frame[:, :, 0]
         frame[:, :, 1] = fgMask * frame[:, :, 1]
@@ -360,7 +369,7 @@ def Background_Substraction():
 
     #seq_filter=median_video_improved.sequental_filter(frame_list)
     # frame_list_rev, fgMask_list_reversed=reversed_process(frame_list)
-    print("\nprocessing forward frames..")
+    #print("\nprocessing forward frames..")
     fgMask_list_forward = extract_fgMask_list(frame_list,background__median,background50_50)
 
     # hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
@@ -388,6 +397,7 @@ def Background_Substraction():
         # frame_list_rev[i]=cv2.bitwise_and(frame_list_rev[i],frame_list_rev[i],mask=mask)
         # frame=cv2.add(frame_list[i],frame_list_rev[i])
         fgMask = fgMask_list_forward[i]
+        #fgMask = combMask_list[i]
         # fgMask_list_forward[i] = cv2.bitwise_and(fgMask_list_forward[i], fgMask_list_forward[i], mask=mask)
         # fgMask_list_reversed[i] = cv2.bitwise_and(fgMask_list_reversed[i], fgMask_list_reversed[i], mask=mask)
         # fgMask = cv2.add(fgMask_list_forward[i], fgMask_list_reversed[i])

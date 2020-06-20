@@ -57,13 +57,13 @@ blob_detect=dict(minThreshold=0, # 10
 
 BS_first_frame_to_process = 40
 BS_last_frame_to_process = 205  # demo 205 frames stabilized 205 frames
-combMask_until_this_frame = 0
+combMask_until_this_frame = 28
 
 # ~~~ Median ~~~ #
 median_background_img = osp.join(cur_path, 'Temp', 'background_improved.jpg')
 median_background50_img = osp.join(cur_path, 'Temp', 'background_improved50_50.jpg')
 median_filter_frames_num = 10 #30 for DEMO. for our Stabilized
-mask_max_diff_from_median =2
+mask_max_diff_from_median =3
 medianSaved = True
 area_filter_parameter=10
 

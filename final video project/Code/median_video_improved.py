@@ -84,7 +84,9 @@ def area_median_filter(frame,background_img):
     diff=np.ones((rows,cols))
     for i in range (config.area_filter_parameter,rows-config.area_filter_parameter):
         for j in range (config.area_filter_parameter,cols-config.area_filter_parameter):
-            if(frame_hsv[i,j,0]==np.any(background_hsv[i-config.area_filter_parameter:i+config.area_filter_parameter,j-config.area_filter_parameter:j+config.area_filter_parameter,0])):
-                diff[i,j]=0
+ #           if(frame_hsv[i,j,0]==np.any(background_hsv[i-config.area_filter_parameter:i+config.area_filter_parameter,j-config.area_filter_parameter:j+config.area_filter_parameter,0])):
+    #             diff[i,j]=0
+            diff[frame_hsv[i, j, 0] == np.any(background_hsv[i - config.area_filter_parameter:i + config.area_filter_parameter,
+                                  j - config.area_filter_parameter:j + config.area_filter_parameter, 0].flatten())] = 0
     diff = np.uint8(diff*255)
     return diff
