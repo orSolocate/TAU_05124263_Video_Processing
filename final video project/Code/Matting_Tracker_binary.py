@@ -1,7 +1,5 @@
 import cv2 as cv
-#import numpy as np
 # from scipy import stats
-#import matplotlib.pyplot as plt
 #from scipy.stats.distributions import norm
 from scipy.stats import gaussian_kde
 #from scipy import stats
@@ -263,7 +261,7 @@ def Matting():
 
         #takes only points from scribble
         #if iteration==1:
-        logging.debug("type of frame_stab:" ,type(frame_stab))
+        logging.debug("type of frame_stab:" +str(type(frame_stab)))
         background_array = frame_stab_tracked[gray_back_scrib == 100]
         foreground_array = frame_stab_tracked[gray_fore_scrib == 100]
 
@@ -297,7 +295,7 @@ def Matting():
         #Probability_map_back = cv.resize(Probability_map_back,(int(Probability_map_back.shape[1]/2),int(Probability_map_back.shape[0]/2)), interpolation=cv.INTER_AREA)
 
         #compute gaodesic distance
-        logging.debug("probability map foreground shape:",Probability_map_fore.shape)
+        logging.debug("probability map foreground shape:"+str(Probability_map_fore.shape))
         #Seeds_foreground = [(59, 187), (221, 149), (261, 202), (368, 173), (432, 238), (492, 167), (730, 89), (741, 327), (359, 89), (283, 285)]
         #Seeds_background = [(52, 60), (330, 36), (568, 62), (697, 156), (659, 356), (468, 336), (154, 360), (30, 316), (793, 316), (777, 38)]
         #gaodesic_fore = gaodesic_ditance(Probability_map_fore,Seeds_foreground);

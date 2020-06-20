@@ -20,7 +20,11 @@ out_vid_file = osp.join(cur_path, 'Outputs', 'OUTPUT.avi')
 
 # ~~~ logger ~~~ #
 log_file = osp.join(cur_path, 'Outputs', 'RunTimeLog.txt')
-logging.basicConfig(filename=log_file, filemode='w', level=logging.INFO)  # for debug: level=logging.DEBUG
+logging.basicConfig(filename=log_file, filemode='w', level=logging.DEBUG)  #no debug: level-logging.INFO, for debug: level=logging.DEBUG
+logging.getLogger("matplotlib.legend").disabled = True
+logging.getLogger("matplotlib.pyplot").disabled = True
+logging.getLogger("matplotlib").disabled = True
+logging.getLogger("matplotlib.font_manager").disabled = True
 
 # ~~~ Video_Stabilization ~~~ #
 SMOOTHING_RADIUS = 150  # was 50 #mine 75  The larger the more stable the video, but less reactive to sudden panning
@@ -68,8 +72,8 @@ MAT_frame_reduction_DEBUG = 0
 
 forePlotted = False
 backPlotted = False
-plot_from_here = 50
-plot_until_here = 52
+plot_from_here = 0
+plot_until_here = 0
 
 tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'CSRT']
 tracker_type = tracker_types[2]
@@ -77,4 +81,4 @@ bbox = (60, 200, 330, 815)  # Define an initial bounding box
 epsilon = 0.00001
 bwperim = dict(n=4)
 MAT_dilate = dict(iterations=2, struct_size=(2, 2))  # wider 5,  (5,5)
-r = 1  # 0<r<2   -can change to desired value
+r = 1  # 0<r<2

@@ -23,7 +23,7 @@ def runme():
     Total_time += runtime_update("Video_Stabilization runtime", start)
     # Background_Substraction step
     start = timeit.default_timer()
-    Background_Substraction.Background_Substraction()
+    #Background_Substraction.Background_Substraction()
     Total_time += runtime_update("Background_Substraction runtime", start)
     # Matting step
     start = timeit.default_timer()
