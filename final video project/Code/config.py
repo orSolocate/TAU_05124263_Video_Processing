@@ -4,7 +4,7 @@ import os.path as osp
 # ~~~ global ~~~ #
 cur_path = osp.split(osp.dirname(osp.abspath(__file__)))[0]
 log_file = osp.join(cur_path, 'Outputs', 'RunTimeLog.txt')
-logging.basicConfig(filename=log_file, filemode='w', level=logging.INFO)  # for debug: logging.DEBUG
+logging.basicConfig(filename=log_file, filemode='w', level=logging.INFO)  # for debug: level=logging.DEBUG
 
 # ~~~ DEMO ~~~ #
 DEMO = True  # True for given stabilized
@@ -40,16 +40,17 @@ createBackground_Substraction = dict(history=170,
 backSub_apply = dict(learningRate=-1)  # negative means automatic learningRate
 BS_erode = dict(iterations=2, struct_size=(15, 10))  # thiner 1, (20,10)
 BS_dilate = dict(iterations=5, struct_size=(4, 4))  # wider 5,  (5,5)
-mask_max_diff_from_median = 13
+mask_max_diff_from_median =2
 BS_first_frame_to_process = 40
 BS_last_frame_to_process = 205  # demo 205 frames stabilized 205 frames
 combMask_until_this_frame = 0
 
 # ~~~ Median ~~~ #
 median_background_img = osp.join(cur_path, 'Temp', 'background_improved.jpg')
+median_background50_img = osp.join(cur_path, 'Temp', 'background_improved50_50.jpg')
 median_filter_frames_num = 10 #30 for DEMO. for our Stabilized
 medianSaved = True
-
+area_filter_parameter=10
 # ~~~ Matting ~~~ #
 MAT_frame_reduction_DEBUG = 0
 
