@@ -16,6 +16,26 @@ def extract_video_params(cap):
 
     return n_frames,fourcc, fps, out_size
 
+def choose_tracker(tracker_type):
+    if tracker_type == 'BOOSTING':
+        return cv2.TrackerBoosting_create()
+    if tracker_type == 'MIL':
+        return cv2.TrackerMIL_create()
+    if tracker_type == 'KCF':
+        return  cv2.TrackerKCF_create()
+    if tracker_type == 'TLD':
+        return  cv2.TrackerTLD_create()
+    if tracker_type == 'MEDIANFLOW':
+        return  cv2.TrackerMedianFlow_create()
+    if tracker_type == 'GOTURN':
+        return cv2.TrackerGOTURN_create()
+    if tracker_type == "CSRT":
+        return cv2.TrackerCSRT_create()
+    logging.error("Undefined tracker selected, pleasse choose another tracker from config.py")
+    exit(1)
+    return
+
+
 def prepare_wrap_transform(transforms_smooth):
         # Extract transformations from the new transformation array
         dx = transforms_smooth[0]
@@ -32,10 +52,3 @@ def prepare_wrap_transform(transforms_smooth):
         m[1, 2] = dy
 
         return m
-
-def fixBorder_inverse(frame):
-    s = frame.shape
-    T = cv2.getRotationMatrix2D((s[1] / 2, s[0] / 2), 0, 1.08)
-    T = cv2.invertAffineTransform(T)
-    frame = cv2.warpAffine(frame, T, (s[1], s[0]))
-    return frame

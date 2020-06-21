@@ -19,7 +19,7 @@ def runme():
     Total_time += runtime_update("Initalizing runtime", start)
     # Video_Stabilization step
     start = timeit.default_timer()
-    #Video_Stabilization.Video_Stabilization()
+    Video_Stabilization.Video_Stabilization()
     Total_time += runtime_update("Video_Stabilization runtime", start)
     # Background_Substraction step
     start = timeit.default_timer()
@@ -27,14 +27,14 @@ def runme():
     Total_time += runtime_update("Background_Substraction runtime", start)
     # Matting step
     start = timeit.default_timer()
-    #Matting_Tracker_binary.Matting()
+    Matting_Tracker_binary.Matting()
     Total_time += runtime_update("Matting runtime", start)
     # Tracking step
     start = timeit.default_timer()
-    #Tracking.Tracking()
+    Tracking.Tracking()
     Total_time += runtime_update("Tracking runtime", start)
-    # close all
     logging.info("Total Execution runtime=  %f seconds", Total_time)
+    # close logger
     logging.shutdown()
     return
 

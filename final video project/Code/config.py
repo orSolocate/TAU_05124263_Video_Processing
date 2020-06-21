@@ -4,7 +4,6 @@ import numpy as np
 
 # ~~~ DEMO ~~~ #
 DEMO = True  # True for given stabilized
-unstable = False
 
 # ~~~ file paths ~~~ #
 cur_path = osp.split(osp.dirname(osp.abspath(__file__)))[0]
@@ -97,15 +96,15 @@ comb_skin=dict(lower_bound = np.array([75, 85, 140]), #demo [75,85,140]
                 dil_iterations=5) #demo 5
 
 # ~~~ Median ~~~ #
-median_background_img = osp.join(cur_path, 'Temp', 'background_improved.jpg')
-median_background50_img = osp.join(cur_path, 'Temp', 'background_improved50_50.jpg')
+median_background_img = osp.join(cur_path, 'Temp', 'background.jpg')
+median_background50_img = osp.join(cur_path, 'Temp', 'background50_50.jpg')
 median_filter_frames_num = 10  # 30 for DEMO. for our Stabilized
 mask_max_diff_from_median =25 #demo 3 stabilzed 25 (not so good)
 medianSaved = True
 area_filter_parameter = 10
 
 # ~~~ Matting ~~~ #
-MAT_frame_reduction_DEBUG = 0
+MAT_frame_reduction_DEBUG = 200
 
 forePlotted = False
 backPlotted = False

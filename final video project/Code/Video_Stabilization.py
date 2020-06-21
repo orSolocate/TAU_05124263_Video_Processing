@@ -38,7 +38,7 @@ def fixBorder(frame):
 
 
 def Video_Stabilization():
-    print("\nVideo_Stabilization:")
+    print("\Video_Stabilization Block:")
     # Read input video
     cap = cv2.VideoCapture(config.in_vid_file)
     n_frames, fourcc, fps, out_size = video_handling.extract_video_params(cap)
