@@ -143,7 +143,7 @@ def extract_fgMask_list(frame_list,background__median,background50_50):
     fgMask_list = []
     i=0
     #explanation for number 102 - this is the number until which the comb fitler is efficient
-    combMask_list = extract_combMask_list(frame_list[:102])
+    combMask_list = extract_combMask_list(frame_list)
     for frame in tqdm(frame_list):
         fgMask = backSub.apply(frame, learningRate=config.backSub_apply['learningRate'])
         # frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
@@ -288,37 +288,53 @@ def extract_fgMask_list(frame_list,background__median,background50_50):
 
 def extract_combMask_list(frame_list):
     comb_mask_list = []
+    i=0
     for frame in tqdm(frame_list):
-        shorts_lower_red = np.array([0, 0, 0])
-        shorts_upper_red = np.array([50, 50, 50])
-        skin_lower_red = np.array([75, 85, 140])
-        skin_upper_red = np.array([110, 120, 180])
-        shirt_lower_red = np.array([0, 0, 40])
-        shirt_upper_red = np.array([80, 80, 100])
+        if (i==108):
+            a=1
+        shorts_mask = cv2.inRange(frame, config.comb_shorts['lower_bound'], config.comb_shorts['upper_bound'])
+        skin_mask = cv2.inRange(frame, config.comb_skin['lower_bound'], config.comb_skin['upper_bound'])
+        shirt_mask = cv2.inRange(frame, config.comb_shirt['lower_bound'], config.comb_shirt['upper_bound'])
+        shoes_mask=cv2.inRange(frame,config.comb_shoes['lower_bound'], config.comb_shoes['upper_bound'])
+        shoes_mask[:int(3 * shoes_mask.shape[0] / 4)] = 0
+        legs_mask = cv2.inRange(frame, config.comb_legs['lower_bound'], config.comb_legs['upper_bound'])
 
-        shorts_mask = cv2.inRange(frame, shorts_lower_red, shorts_upper_red)
-        skin_mask = cv2.inRange(frame, skin_lower_red, skin_upper_red)
-        shirt_mask = cv2.inRange(frame, shirt_lower_red, shirt_upper_red)
+        shirt_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.comb_shirt['er_struct_size'])
+        shirt_mask_morph = cv2.erode(shirt_mask, shirt_kernel, iterations=config.comb_shirt['er_iterations'])
+        shirt_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.comb_shirt['dil_struct_size'])
+        shirt_mask_morph = cv2.dilate(shirt_mask_morph, shirt_kernel, iterations=config.comb_shirt['dil_iterations'])
 
-        shirt_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 10))  # 15,10
-        shirt_mask_morph = cv2.erode(shirt_mask, shirt_kernel, iterations=2)  # thiner 1
-        shirt_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # 5,5
-        shirt_mask_morph = cv2.dilate(shirt_mask_morph, shirt_kernel, iterations=5)  # wider 5
+        skin_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,config.comb_skin['er_struct_size'])
+        skin_mask_morph = cv2.erode(skin_mask, skin_kernel, iterations=config.comb_skin['er_iterations'])
+        skin_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.comb_skin['dil_struct_size'])
+        skin_mask_morph = cv2.dilate(skin_mask_morph, skin_kernel, iterations=config.comb_skin['dil_iterations'])
 
-        skin_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # 15,10
-        skin_mask_morph = cv2.erode(skin_mask, skin_kernel, iterations=2)  # thiner 1
-        skin_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # 5,5
-        skin_mask_morph = cv2.dilate(skin_mask_morph, skin_kernel, iterations=5)  # wider 5
+        shorts_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.comb_shorts['er_struct_size'])
+        shorts_mask_morph = cv2.erode(shorts_mask, shorts_kernel, iterations=config.comb_shorts['er_iterations'])
+        shorts_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.comb_shorts['dil_struct_size'])
+        shorts_mask_morph = cv2.dilate(shorts_mask_morph, shorts_kernel, iterations=config.comb_shorts['dil_iterations'])
 
-        shorts_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 5))  # 15,10
-        shorts_mask_morph = cv2.erode(shorts_mask, shorts_kernel, iterations=2)  # thiner 1
-        shorts_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # 5,5
-        shorts_mask_morph = cv2.dilate(shorts_mask_morph, shorts_kernel, iterations=5)  # wider 5
+        shoes_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.comb_shoes['er_struct_size'])
+        shoes_mask_morph = cv2.erode(shoes_mask, shoes_kernel, iterations=config.comb_shoes['er_iterations'])
+        shoes_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.comb_shoes['dil_struct_size'])
+        shoes_mask_morph = cv2.dilate(shoes_mask_morph, shoes_kernel, iterations=config.comb_shoes['dil_iterations'])
 
-        comb_mask = cv2.bitwise_or(shirt_mask_morph, skin_mask_morph)
-        comb_mask = cv2.bitwise_or(comb_mask, shorts_mask_morph)
-        comb_mask[:,int(frame.shape[1]/2):]=0
+        legs_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.comb_legs['er_struct_size'])
+        legs_mask_morph = cv2.erode(legs_mask, legs_kernel, iterations=config.comb_legs['er_iterations'])
+        legs_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.comb_legs['dil_struct_size'])
+        legs_mask_morph = cv2.dilate(legs_mask_morph, legs_kernel, iterations=config.comb_legs['dil_iterations'])
+        legs_mask_morph[:int(2 * legs_mask_morph.shape[0] / 3)] = 0
+
+        comb_mask = cv2.bitwise_or(shirt_mask_morph, shorts_mask_morph)
+        comb_mask=cv2.bitwise_or(comb_mask,shoes_mask_morph)
+        comb_mask = cv2.bitwise_or(comb_mask, legs_mask_morph)
+        if (i<3*len(frame_list)/8):
+            comb_mask = cv2.bitwise_or(comb_mask, skin_mask_morph)
+            comb_mask[:,int(frame.shape[1]/2):]=0
+        elif (i>5*len(frame_list)/8):
+            comb_mask[:, :int(frame.shape[1] / 2)] = 0
         comb_mask_list.append(comb_mask)
+        i+=1
     return comb_mask_list
 
 

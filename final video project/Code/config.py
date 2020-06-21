@@ -1,5 +1,6 @@
 import logging
 import os.path as osp
+import numpy as np
 
 # ~~~ DEMO ~~~ #
 DEMO = True  # True for given stabilized
@@ -20,7 +21,8 @@ out_vid_file = osp.join(cur_path, 'Outputs', 'OUTPUT.avi')
 
 # ~~~ logger ~~~ #
 log_file = osp.join(cur_path, 'Outputs', 'RunTimeLog.txt')
-logging.basicConfig(filename=log_file, filemode='w', level=logging.DEBUG)  #no debug: level-logging.INFO, for debug: level=logging.DEBUG
+logging.basicConfig(filename=log_file, filemode='w',
+                    level=logging.DEBUG)  # no debug: level-logging.INFO, for debug: level=logging.DEBUG
 logging.getLogger("matplotlib.legend").disabled = True
 logging.getLogger("matplotlib.pyplot").disabled = True
 logging.getLogger("matplotlib").disabled = True
@@ -32,40 +34,75 @@ SMOOTHING_RADIUS = 150  # was 50 #mine 75  The larger the more stable the video,
 goodFeaturesToTrack = dict(maxCorners=1000,  # was 200 #mine 1000
                            qualityLevel=0.05,  # was 0.01
                            minDistance=10,  # was 30
-                           blockSize=3)
+                           blockSize=3)  # was 3 #mine 5
 calcOpticalFlowPyrLK = dict(winSize=(50, 50),
                             maxLevel=10)
+transforms_file = osp.join(cur_path, 'Temp', 'video_stabilization_transforms.p')
 
 # ~~~ Background_Substraction ~~~ #
 BS_frame_reduction_DEBUG = 0
-createBackground_Substraction = dict(history=170,
-                                     dist2Threshold=500.0,
+createBackground_Substraction = dict(history=170, #demo 170
+                                     dist2Threshold=500.0, #demo 500.0
                                      detectShadows=True)
-backSub_apply = dict(learningRate=-1)  # negative means automatic learningRate
-BS_erode = dict(iterations=2, struct_size=(15, 10))  # thiner 1, (20,10)
-BS_dilate = dict(iterations=5, struct_size=(4, 4))  # wider 5,  (5,5)
-blob_detect=dict(minThreshold=0, # 10
-                 maxThreshold=200,  # 200
-                 filterByArea=True,
-                 minArea=0.01, # 1500
-                 filterByCircularity=True,
-                 minCircularity=0.1,
-                 filterByConvexity=True,
-                 minConvexity=0.01, # 0.87
-                 filterByInertia=True,
-                 minInertiaRatio = 0.01)
+backSub_apply = dict(learningRate=-1)  # negative means automatic learningRate #demo -1
+BS_erode = dict(iterations=2, struct_size=(15, 10))  # thiner 1, (20,10) #demp 2, (15.10)
+BS_dilate = dict(iterations=5, struct_size=(4, 4))  # wider 5,  (5,5) #demo 5, (4,$)
+blob_detect = dict(minThreshold=0,  # 10
+                   maxThreshold=200,  # 200
+                   filterByArea=True,
+                   minArea=0.01,  # 1500
+                   filterByCircularity=True,
+                   minCircularity=0.1,
+                   filterByConvexity=True,
+                   minConvexity=0.01,  # 0.87
+                   filterByInertia=True,
+                   minInertiaRatio=0.01)
 
-BS_first_frame_to_process = 40
-BS_last_frame_to_process = 205  # demo 205 frames stabilized 205 frames
+BS_first_frame_to_process = 0
+BS_last_frame_to_process = 0  # demo 205 frames stabilized 205 frames
 combMask_until_this_frame = 28
+comb_shorts=dict(lower_bound = np.array([0, 0, 0]), #demo [0,0,0]
+                upper_bound=np.array([50, 50, 50]), #demo [50,50,50,]
+                er_struct_size=(10, 5), #demo (10,5), wider: (15,10)
+                er_iterations=2, #demo 2
+                dil_struct_size=(5, 5), #demo (5,5)
+                dil_iterations=5) #demo 5
+
+comb_shirt=dict(lower_bound = np.array([0, 0, 55]), #demo [0,0,55] [0,0,40]
+                upper_bound=np.array([90, 80,124]),  #demo [90,80,124]  stabilized improve1 [83,80,115] improve 2
+                er_struct_size=(15, 10),#demo 15,10
+                er_iterations=2, #demo 2
+                dil_struct_size=(5, 5),  #demo 5,5
+                dil_iterations=5)# demo 5
+
+comb_legs=dict(lower_bound = np.array([60, 75, 124]), #demo [60,75,124]
+                upper_bound=np.array([95,110,160]), #demo [95,110,160]
+                er_struct_size=(5, 5), #demo (5,5)
+                er_iterations=2, #demo 2
+                dil_struct_size=(5, 5), #demo (5,5)
+                dil_iterations=5) #demo 5
+
+comb_shoes=dict(lower_bound = np.array([0, 0, 0]), #demo [0,0,0]
+                upper_bound=np.array([95, 98, 100]), #demo [95,98,100]
+                er_struct_size=(10, 10), #demo (10,10)
+                er_iterations=2, #demo 2
+                dil_struct_size=(5, 5), #demo (5,5)
+                dil_iterations=5) #demo 5
+
+comb_skin=dict(lower_bound = np.array([75, 85, 140]), #demo [75,85,140]
+                upper_bound=np.array([110, 120, 180]), #demo [110,120,180]
+                er_struct_size=(5, 5), #demo (5,5) ,  wider:(15,10)
+                er_iterations=2, #demo 2
+                dil_struct_size=(5, 5), #demo (5,5)
+                dil_iterations=5) #demo 5
 
 # ~~~ Median ~~~ #
 median_background_img = osp.join(cur_path, 'Temp', 'background_improved.jpg')
 median_background50_img = osp.join(cur_path, 'Temp', 'background_improved50_50.jpg')
-median_filter_frames_num = 10 #30 for DEMO. for our Stabilized
-mask_max_diff_from_median =3
+median_filter_frames_num = 10  # 30 for DEMO. for our Stabilized
+mask_max_diff_from_median =25 #demo 3 stabilzed 25 (not so good)
 medianSaved = True
-area_filter_parameter=10
+area_filter_parameter = 10
 
 # ~~~ Matting ~~~ #
 MAT_frame_reduction_DEBUG = 0

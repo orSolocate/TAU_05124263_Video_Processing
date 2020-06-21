@@ -12,6 +12,7 @@ from tqdm import tqdm
 import logging
 import GeodisTK
 import video_handling
+import pickle
 ##############################################################################
 
 def bwperim(bw, n=4):
@@ -137,22 +138,22 @@ def geo_distance(frame, scrible_pos, isPlotted):
 
 def Matting():
     print("\nMatting:")
-    if not (config.unstable):
-        if (config.DEMO):
-            capture_stab = cv.VideoCapture(config.demo_stabilized_vid_file)
-        else:
-            capture_stab = cv.VideoCapture(config.stabilized_vid_file)
-        n_frames_stab,fourcc, fps, out_size=video_handling.extract_video_params(capture_stab)
-        alpha_out = cv.VideoWriter(config.alpha_vid_file, fourcc, fps, out_size)
+    #input videos
+    if (config.DEMO):
+        capture_stab = cv.VideoCapture(config.demo_stabilized_vid_file)
     else:
-        capture_stab = cv.VideoCapture(config.in_vid_file)
-        n_frames_stab,fourcc, fps, out_size=video_handling.extract_video_params(capture_stab)
-        alpha_out = cv.VideoWriter(config.un_alpha_vid_file, fourcc, fps, out_size)
-
+        capture_stab = cv.VideoCapture(config.stabilized_vid_file)
+    n_frames_stab,fourcc, fps, out_size=video_handling.extract_video_params(capture_stab)
     capture_bin = cv.VideoCapture(config.binary_vid_file)
     n_frames_bin, fourcc_bin, fps_bin, out_size_bin = video_handling.extract_video_params(capture_bin)
 
+    #output videos
     out = cv.VideoWriter(config.matted_vid_file, fourcc, fps,out_size)
+    alpha_out = cv.VideoWriter(config.alpha_vid_file, fourcc, fps, out_size)
+    un_alpha_out = cv.VideoWriter(config.un_alpha_vid_file, fourcc, fps, out_size)
+
+    alpha_list=[]
+    transforms_smooth = pickle.load(open(config.transforms_file, "rb"))
 
     # read background image
     background = cv.imread(config.in_background_file)
@@ -390,6 +391,7 @@ def Matting():
 
         alpha_full_out = np.uint8(alpha_full * 255)
         alpha_out.write(alpha_full_out)
+        alpha_list.append(alpha_full_out)
 
         alpha_full=alpha_full.astype(float)
         foreground_mul_alpha = cv.multiply(alpha_full, foreground)
@@ -410,10 +412,24 @@ def Matting():
         out.write(outImage)
         #cv.imshow('Matted', outImage)
 
+    print("\nApplying inverse transform to write 'unstabilized_alpha.avi'..")
+    for i in tqdm(range(len(alpha_list))):
+        m=video_handling.prepare_wrap_transform(transforms_smooth[i, :])
+
+        m=cv.invertAffineTransform(m)
+        un_alpha = cv.warpAffine(alpha_list[i], m, out_size)
+
+        # Fix border artifacts
+        un_alpha = video_handling.fixBorder_inverse(un_alpha)
+
+        # Write the frame to the file
+        un_alpha_out.write(un_alpha)
+
     # Release video
     cv.destroyAllWindows()
     capture_stab.release()
     capture_bin.release()
     out.release()
     alpha_out.release()
+    un_alpha_out.release()
     return
