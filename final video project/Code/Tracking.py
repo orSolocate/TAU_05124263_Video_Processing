@@ -10,8 +10,8 @@ def Tracking():
     # choose tracker
     tracker = video_handling.choose_tracker(tracker_type=config.tracker_type)
     # [input video]
-    #video = cv2.VideoCapture(config.matted_vid_file)
-    video = cv2.VideoCapture(config.stabilized_vid_file) #for debug
+    video = cv2.VideoCapture(config.matted_vid_file)
+    #video = cv2.VideoCapture(config.stabilized_vid_file) #for debug
     n_frames, fourcc, fps, out_size = video_handling.extract_video_params(video)
 
     #  [output video]

@@ -32,11 +32,9 @@ def extract_fgMask_list(frame_list,background__median,background50_50):
         fgMask = np.uint8(fgMask / 255)
 
         # FRAME MANIPULATION!#
-        if (i==12):
-            a=1
-        frame[:, :, 0] = fgMask * frame[:, :, 0]
-        frame[:, :, 1] = fgMask * frame[:, :, 1]
-        frame[:, :, 2] = fgMask * frame[:, :, 2]
+        #debug
+        # if (i==8):
+        #     a=1
         diff = cv2.absdiff(frame, background__median)
         a = (diff[:, :, 0] <= config.mask_max_diff_from_median)
         b = (diff[:, :, 1] <= config.mask_max_diff_from_median)
@@ -66,28 +64,14 @@ def extract_fgMask_list(frame_list,background__median,background50_50):
         #fgMask = fgMask / 255
         #fgMask[diff <= config.mask_max_diff_from_median] = 0
         fgMask[mask==0] = 0
-        frame[:, :, 0] = fgMask * frame[:, :, 0]
-        frame[:, :, 1] = fgMask * frame[:, :, 1]
-        frame[:, :, 2] = fgMask * frame[:, :, 2]
         fgMask[mask50==0] = 0
         #fgMask[diff50 <= config.mask_max_diff_from_median] = 0
-        frame[:, :, 0] = fgMask * frame[:, :, 0]
-        frame[:, :, 1] = fgMask * frame[:, :, 1]
-        frame[:, :, 2] = fgMask * frame[:, :, 2]
 
         #area_median_filter=median_video_improved.area_median_filter(frame, background50_50)
         #fgMask=cv2.bitwise_or(fgMask,area_median_filter)
-        #frame[:, :, 0] = fgMask * frame[:, :, 0]
-        #frame[:, :, 1] = fgMask * frame[:, :, 1]
-        #frame[:, :, 2] = fgMask * frame[:, :, 2]
         #
         # area_median_filter = median_video_improved.area_median_filter(frame, background__median)
         # fgMask = cv2.bitwise_or(fgMask, area_median_filter)
-        # frame[:, :, 0] = fgMask * frame[:, :, 0]
-        # frame[:, :, 1] = fgMask * frame[:, :, 1]
-        # frame[:, :, 2] = fgMask * frame[:, :, 2]
-
-        #
 
         #         # difference = cv2.subtract(frame, background_after_median)
         #         # difference_grayscale = cv2.cvtColor(difference, cv2.COLOR_BGR2GRAY)

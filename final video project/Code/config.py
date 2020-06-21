@@ -74,7 +74,7 @@ comb_shirt=dict(lower_bound = np.array([0, 0, 55]), #demo [0,0,55] [0,0,40]
                 dil_struct_size=(5, 5),  #demo 5,5
                 dil_iterations=5)# demo 5
 
-comb_legs=dict(lower_bound = np.array([60, 75, 124]), #demo [60,75,124]
+comb_legs=dict(lower_bound = np.array([60, 75, 128]), #demo [60,75,124]
                 upper_bound=np.array([95,110,160]), #demo [95,110,160]
                 er_struct_size=(5, 5), #demo (5,5)
                 er_iterations=2, #demo 2
