@@ -59,8 +59,6 @@ blob_detect = dict(minThreshold=0,  # 10
                    filterByInertia=True,
                    minInertiaRatio=0.01)
 
-BS_first_frame_to_process = 0
-BS_last_frame_to_process = 0  # demo 205 frames stabilized 205 frames
 combMask_until_this_frame = 28
 comb_shorts=dict(lower_bound = np.array([0, 0, 0]), #demo [0,0,0]
                 upper_bound=np.array([50, 50, 50]), #demo [50,50,50,]
@@ -106,7 +104,7 @@ medianSaved = True
 area_filter_parameter = 10
 
 # ~~~ Matting ~~~ #
-MAT_frame_reduction_DEBUG = 200
+MAT_frame_reduction_DEBUG =0
 
 forePlotted = False
 backPlotted = False

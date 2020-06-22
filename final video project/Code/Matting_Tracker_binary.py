@@ -41,7 +41,7 @@ def Matting():
     print("\nprocessing frames for Matting..")
     forePlotted = config.forePlotted
     backPlotted = config.backPlotted
-    for iteration in tqdm(range(1,min(n_frames_stab,n_frames_bin)-config.MAT_frame_reduction_DEBUG)): #why do you start from 1??
+    for iteration in tqdm(range(0,min(n_frames_stab,n_frames_bin)-config.MAT_frame_reduction_DEBUG)): #why do you start from 1??
         ret, frame_stab = capture_stab.read()
         ret, frame_bin = capture_bin.read()
         frame_stab_hsv = cv2.cvtColor(frame_stab, cv2.COLOR_BGR2HSV)  # 29=scrib, 255=garbage
@@ -116,7 +116,7 @@ def Matting():
         gaodesic_fore=Matting_functions.geo_distance(frame_stab_tracked, gray_fore_scrib, forePlotted)
         gaodesic_back=Matting_functions.geo_distance(frame_stab_tracked, gray_back_scrib, backPlotted)
 
-        if (config.plot_from_here<=iteration<=config.plot_until_here):
+        if (config.plot_from_here<iteration<=config.plot_until_here):
             forePlotted=True
             backPlotted=True
         else:
@@ -197,19 +197,18 @@ def Matting():
         out.write(outImage)
         #cv2.imshow('Matted', outImage)
 
-    print("\nApplying inverse transform to write 'unstabilized_alpha.avi'..")
-    for i in tqdm(range(len(alpha_list))):
-        m=video_handling.prepare_wrap_transform(transforms_smooth[i, :])
-
-        m=cv2.invertAffineTransform(m)
-        un_alpha = cv2.warpAffine(alpha_list[i], m, out_size)
-
-        # Fix border artifacts
-        un_alpha = Matting_functions.fixBorder_inverse(un_alpha)
-
-        # Write the frame to the file
-        un_alpha_out.write(un_alpha)
-
+    print("\nApplying inverse transform to write 'unestablized_alpha.avi'..")
+    n_frames_alpha=len(alpha_list)
+    for i in tqdm(range(n_frames_alpha-1)):
+            # 'unfix' border artifacts
+            un_alpha = Matting_functions.fixBorder_inverse(alpha_list[i])
+            m=video_handling.prepare_wrap_transform(transforms_smooth[i, :])
+            m=cv2.invertAffineTransform(m)
+            un_alpha = cv2.warpAffine(un_alpha, m, out_size)
+            # Write the frame to the file
+            un_alpha_out.write(un_alpha)
+            if (i == n_frames_alpha - 2):
+                un_alpha_out.write(un_alpha) #write last frame twice
     # Release video
     cv2.destroyAllWindows()
     capture_stab.release()
