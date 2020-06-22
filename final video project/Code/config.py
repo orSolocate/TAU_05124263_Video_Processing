@@ -17,6 +17,8 @@ matted_vid_file = osp.join(cur_path, 'Outputs', 'matted.avi')
 alpha_vid_file = osp.join(cur_path, 'Outputs', 'alpha.avi')
 un_alpha_vid_file = osp.join(cur_path, 'Outputs', 'unstabilized_alpha.avi')
 out_vid_file = osp.join(cur_path, 'Outputs', 'OUTPUT.avi')
+outputs_vector=[stabilized_vid_file,extracted_vid_file,binary_vid_file,matted_vid_file,alpha_vid_file
+                ,un_alpha_vid_file,out_vid_file]
 
 # ~~~ logger ~~~ #
 log_file = osp.join(cur_path, 'Outputs', 'RunTimeLog.txt')

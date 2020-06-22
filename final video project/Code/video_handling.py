@@ -50,5 +50,27 @@ def prepare_wrap_transform(transforms_smooth):
         m[1, 1] = np.cos(da)
         m[0, 2] = dx
         m[1, 2] = dy
-
         return m
+
+
+def test_output(input_name,output_name):
+    in_vid = cv2.VideoCapture(input_name)
+    out_vid = cv2.VideoCapture(output_name)
+    n_frames, fourcc, fps, out_size=extract_video_params(in_vid)
+    n_frames_out, fourcc_out, fps_out, out_size_out=extract_video_params(out_vid)
+    if (n_frames==n_frames_out and fourcc==fourcc and fps==fps_out and out_size==out_size_out):
+        return True
+    else:
+        logging.error('Block output has different properties as input\n video path'+output_name+'\n')
+        return False
+
+def test_all_outputs(input_name, outputs_list):
+    result=[]
+    for output_name in outputs_list:
+        result.append(test_output(input_name,output_name))
+    result=np.asarray(result)
+    if (np.all(result)==True):
+        print('All output tests passed')
+        return True
+    return False
+
