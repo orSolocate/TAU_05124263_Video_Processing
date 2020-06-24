@@ -101,9 +101,6 @@ def Video_Stabilization():
         # Move to next frame
         prev_gray = curr_gray
 
-        logging.debug("Frame: " + str(i) + "/" + str(n_frames) + " -  Tracked points : " + str(len(prev_pts)))
-        # Or - why not print n_frames-1 ???
-
     # Compute trajectory using cumulative sum of transformations
     trajectory = np.cumsum(transforms, axis=0)
 

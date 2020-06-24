@@ -19,11 +19,11 @@ def runme():
     Total_time += runtime_update("Initalizing runtime", start)
     # Video_Stabilization step
     start = timeit.default_timer()
-    #Video_Stabilization.Video_Stabilization()
+    Video_Stabilization.Video_Stabilization()
     Total_time += runtime_update("Video_Stabilization runtime", start)
     # Background_Subtraction step
     start = timeit.default_timer()
-    #Background_Substraction.Background_Substraction()
+    Background_Substraction.Background_Substraction()
     Total_time += runtime_update("Background_Subtraction runtime", start)
     # Matting step
     start = timeit.default_timer()

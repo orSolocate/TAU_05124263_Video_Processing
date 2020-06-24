@@ -8,6 +8,7 @@ import pickle
 import Matting_functions
 
 
+
 def Matting():
     print("\nMatting Block:")
     #input videos
@@ -36,26 +37,22 @@ def Matting():
     timer = cv2.getTickCount()
 
     #choose tracker
-    tracker = video_handling.choose_tracker(tracker_type=config.tracker_type)
+    tracker = video_handling.choose_tracker(tracker_type=config.matting_tracker_type)
 
     print("\nprocessing frames for Matting..")
     forePlotted = config.forePlotted
     backPlotted = config.backPlotted
-    for iteration in tqdm(range(0,min(n_frames_stab,n_frames_bin)-config.MAT_frame_reduction_DEBUG)): #why do you start from 1??
+    for iteration in tqdm(range(0,min(n_frames_stab,n_frames_bin)-config.MAT_frame_reduction_DEBUG)):
         ret, frame_stab = capture_stab.read()
         ret, frame_bin = capture_bin.read()
         frame_stab_hsv = cv2.cvtColor(frame_stab, cv2.COLOR_BGR2HSV)  # 29=scrib, 255=garbage
 
         gray_fore_scrib = cv2.cvtColor(frame_bin, cv2.COLOR_BGR2GRAY)  # 29=scrib, 255=garbage
-        gray_fore_scrib[gray_fore_scrib>=200]=100#!=255
-        gray_fore_scrib[gray_fore_scrib<=99]=0#==255
+        gray_fore_scrib[gray_fore_scrib>=200]=100
+        gray_fore_scrib[gray_fore_scrib<=99]=0
         gray_back_scrib = cv2.bitwise_not(cv2.cvtColor(frame_bin, cv2.COLOR_BGR2GRAY))
         gray_back_scrib[gray_back_scrib<=99]=0
         gray_back_scrib[gray_back_scrib>=200]=100
-
-        # plot background and foreground scribbels
-        #cv2.imshow("test1",gray_back_scrib)
-        #cv2.imshow("test2",gray_fore_scrib)
 
         #  [tracker]
         # Initialize tracker with first frame and bounding box
@@ -66,15 +63,11 @@ def Matting():
         # Calculate Frames per second (FPS)
         fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer);
 
-        # Display tracker type on frame
-        cv2.putText(frame_stab, config.tracker_type + " Tracker", (100, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
-
         # Display FPS on frame
         cv2.putText(frame_stab, "FPS : " + str(int(fps)), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
 
 
         frame_stab_tracked = frame_stab[int(config.bbox[1]):int((config.bbox[1] + config.bbox[3])),int(config.bbox[0]):int(1.3*(config.bbox[0] + config.bbox[2])),:]
-        #frame_bin_tracked = frame_bin[int(config.bbox[1]):int((config.bbox[1] + config.bbox[3])),int(config.bbox[0]):int(1.3*(config.bbox[0] + config.bbox[2]))]
         gray_back_scrib = gray_back_scrib[int(config.bbox[1]):int((config.bbox[1] + config.bbox[3])),int(config.bbox[0]):int(1.3*(config.bbox[0] + config.bbox[2]))]
         gray_fore_scrib = gray_fore_scrib[int(config.bbox[1]):int((config.bbox[1] + config.bbox[3])),int(config.bbox[0]):int(1.3*(config.bbox[0] + config.bbox[2]))]
 
@@ -82,7 +75,6 @@ def Matting():
         frame_stab_tracked = frame_stab_hsv_tracked[:,:,2]
 
         #takeing only points from scribble
-        logging.debug("type of frame_stab:" +str(type(frame_stab)))
         background_array = frame_stab_tracked[gray_back_scrib == 100]
         foreground_array = frame_stab_tracked[gray_fore_scrib == 100]
 
@@ -96,22 +88,10 @@ def Matting():
         #probabilties of background and foreground
         P_F = kde_fore_pdf / (kde_fore_pdf + kde_back_pdf)
         P_B = kde_back_pdf / (kde_fore_pdf + kde_back_pdf)
-        P_B = kde_back_pdf / (kde_fore_pdf + kde_back_pdf)
 
         #probabilies map of background and foreground
         Probability_map_fore = P_F[frame_stab_tracked]
         Probability_map_back = P_B[frame_stab_tracked]
-
-
-        #plot probabilty maps
-        #cv2.imshow("Probability map foreground", Probability_map_fore);
-        #cv2.imshow("Probability map background", Probability_map_back);
-
-        #compute gaodesic distance
-        logging.debug("probability map foreground shape:"+str(Probability_map_fore.shape))
-        #Old Geodesic distance. unused. here for doc. proof
-        #gaodesic_fore = gaodesic_ditance(Probability_map_fore,gray_fore_scrib);
-        #gaodesic_back = gaodesic_ditance(Probability_map_back,gray_back_scrib);
 
         gaodesic_fore=Matting_functions.geo_distance(frame_stab_tracked, gray_fore_scrib, forePlotted)
         gaodesic_back=Matting_functions.geo_distance(frame_stab_tracked, gray_back_scrib, backPlotted)
@@ -130,22 +110,18 @@ def Matting():
         Vforeground = frame_stab_tracked
         Vforeground = (gaodesic_fore - gaodesic_back >= 0) * np.zeros(Vforeground.shape)
         Vforeground = (gaodesic_fore - gaodesic_back < 0) * np.ones(Vforeground.shape)
-        #cv2.imshow('Vforground',Vforeground)
 
         #extracting foreground outline
         delta_edges = Matting_functions.bwperim(Vforeground, n=config.bwperim['n'])
-        #cv2.imshow('delta_edges',delta_edges)
 
         #Morphological dilate
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, config.MAT_dilate['struct_size'])
         B_ro = cv2.dilate(delta_edges, kernel, iterations=config.MAT_dilate['iterations'])  # wider binary image
         B_ro = (B_ro==1) * 0.5
-        #cv2.imshow('B_ro',B_ro)
 
         trimap = np.zeros((Vforeground.shape))
         trimap = Vforeground#foreground area filled with '1'
         trimap[B_ro == 0.5] =  0.5# undecided area
-        #cv2.imshow('trimap',trimap)
 
         #alpha mating
         r = config.r * np.ones((frame_stab_tracked.shape))
@@ -187,7 +163,6 @@ def Matting():
 
         background_mul = background_mul.astype(int)
         foreground_mul_alpha = foreground_mul_alpha.astype(int)
-        #foreground = foreground.astype(float)
 
         outImage = cv2.add(background_mul, foreground_mul_alpha)
         outImage = np.uint8(outImage)
