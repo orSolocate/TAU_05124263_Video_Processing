@@ -1,10 +1,11 @@
 import cv2
 import numpy as np
 import config
-import logging
 from tqdm import tqdm
 import video_handling
 import pickle
+import time
+
 
 def movingAverage(curve, radius):
     window_size = 2 * radius + 1
@@ -38,12 +39,12 @@ def fixBorder(frame):
 
 
 def Video_Stabilization():
-    print("\Video_Stabilization Block:")
+    print("\n\Video_Stabilization Block:\n")
     # Read input video
     cap = cv2.VideoCapture(config.in_vid_file)
     n_frames, fourcc, fps, out_size = video_handling.extract_video_params(cap)
 
-    out = cv2.VideoWriter(config.stabilized_vid_file, fourcc, fps, out_size)  # 'stabilize.avi'
+    out = cv2.VideoWriter(config.stabilized_vid_file, fourcc, fps, out_size)
 
     # Read first frame
     _, prev = cap.read()
@@ -54,7 +55,7 @@ def Video_Stabilization():
     # Pre-define transformation-store array
     transforms = np.zeros((n_frames - 1, 3), np.float32)
 
-    print("\ncalculating stabilizing transforms..\n")
+    print("calculating stabilizing transforms..")
     for i in tqdm(range(n_frames - 1)):
         prev_pts = cv2.goodFeaturesToTrack(prev_gray,
                                            config.goodFeaturesToTrack['maxCorners'],
@@ -68,27 +69,19 @@ def Video_Stabilization():
 
         # Convert to grayscale
         curr_gray = cv2.cvtColor(curr, cv2.COLOR_BGR2GRAY)
-        # curr_gray_x = cv2.Sobel(curr_gray, cv2.CV_8U, 1, 0)
-        # curr_gray_y = cv2.Sobel(curr_gray, cv2.CV_8U, 0, 1)
-        # curr_gray = 5*(curr_gray_x + curr_gray_y)
-
         # Calculate optical flow (i.e. track feature points)
         curr_pts, status, err = cv2.calcOpticalFlowPyrLK(prev_gray, curr_gray, prev_pts, None,
                                                          config.calcOpticalFlowPyrLK['winSize'],
                                                          config.calcOpticalFlowPyrLK['maxLevel'])
-
         # Sanity check
         assert prev_pts.shape == curr_pts.shape
-
         # Filter only valid points
         idx = np.where(status == 1)[0]
         prev_pts = prev_pts[idx]
         curr_pts = curr_pts[idx]
-
         # Find transformation matrix
         m = cv2.estimateRigidTransform(prev_pts, curr_pts, fullAffine=True)  # will only work with OpenCV-3 or less
-
-        # Extract traslation
+        # Extract translation
         dx = m[0, 2]
         dy = m[1, 2]
 
@@ -117,7 +110,8 @@ def Video_Stabilization():
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
     # Write n_frames-1 transformed frames
-    print("\nWarping image..")
+    print("Warping image..")
+    time.sleep(0.5)
     for i in tqdm(range(n_frames - 1)):
         # Read next frame
         success, frame = cap.read()
@@ -134,16 +128,6 @@ def Video_Stabilization():
 
         # Write the frame to the file
         frame_out = frame_stabilized
-        # frame_out = cv2.hconcat([frame_stabilized,frame_stabilized])
-        # frame_out = cv2.hconcat([frame, frame_stabilized])
-
-        # If the image is too big, resize it.
-        #  if(frame_out.shape[1] > 1920):
-        #    frame_out = cv2.resize(frame_out, (int(frame_out.shape[1]/2)), (int(frame_out.shape[0]/2)));
-        # cv2.putText(frame_out, "frame number : " + str(i), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
-
-        # cv2.imshow("Before and After", frame_out)
-        # cv2.waitKey(10)
         out.write(frame_out)
         if (i == n_frames - 2):
             out.write(frame_out)

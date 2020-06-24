@@ -27,15 +27,15 @@ def runme():
     Total_time += runtime_update("Background_Subtraction runtime", start)
     # Matting step
     start = timeit.default_timer()
-    Matting_Tracker_binary.Matting()
+    #Matting_Tracker_binary.Matting()
     Total_time += runtime_update("Matting runtime", start)
     # Tracking step
     start = timeit.default_timer()
-    Tracking.Tracking()
+    #Tracking.Tracking()
     Total_time += runtime_update("Tracking runtime", start)
     logging.info("Total Execution runtime=  %f seconds", Total_time)
-    #test
-    video_handling.test_all_outputs(config.in_vid_file,config.outputs_vector)
+    # test
+    video_handling.test_all_outputs(config.in_vid_file, config.outputs_vector)
     # close logger
     logging.shutdown()
     return
