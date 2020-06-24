@@ -1,0 +1,6 @@
+INFO:root:Initalizing runtime=   0.000152 seconds
+INFO:root:Video_Stabilization runtime=   31.019669 seconds
+INFO:root:Background_Subtraction runtime=   111.953524 seconds
+INFO:root:Matting runtime=   2660.735707 seconds
+INFO:root:Tracking runtime=   99.778531 seconds
+INFO:root:Total Execution runtime=  2903.487583 seconds
